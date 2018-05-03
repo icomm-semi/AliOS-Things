@@ -55,6 +55,7 @@ $(NAME)_PREBUILT_LIBRARY := lib/$(HOST_ARCH)/libmbedtls.a.dbg
 endif
 endif
 
+ifneq ($(HOST_ARCH), ANDES_N10)
 $(NAME)_SOURCES     := mbedtls_net.c
 $(NAME)_SOURCES     += mbedtls_ssl.c
-
+endif

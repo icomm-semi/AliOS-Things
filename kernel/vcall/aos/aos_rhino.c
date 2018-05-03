@@ -388,7 +388,7 @@ int aos_queue_recv(aos_queue_t *queue, unsigned int ms, void *msg,
         return -EINVAL;
     }
 
-    ret = krhino_buf_queue_recv(queue->hdl, MS2TICK(ms), msg, size);
+    ret = krhino_buf_queue_recv(queue->hdl, MS2TICK(ms), msg, (size_t *)size);
     if (ret == RHINO_SUCCESS) {
         return 0;
     }

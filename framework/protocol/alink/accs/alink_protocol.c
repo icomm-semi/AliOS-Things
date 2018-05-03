@@ -789,7 +789,7 @@ int32_t alink_response_get_x(char *in, char *out, int outLen, char *key)
     return rsp.code;
 }
 
-int32_t alink_parse_response_CB(char *p_cName, int iNameLen, char *p_cValue,
+int alink_parse_response_CB(char *p_cName, int iNameLen, char *p_cValue,
                                 int iValueLen, int iValueType, void *p_CBData)
 {
     int i;
@@ -833,7 +833,7 @@ int32_t alink_parse_response(char *p_cJsonStr, int iStrLen,
                                  (void *)p_stRsp);
 }
 
-int32_t alink_parse_request_CB(char *p_cName, int iNameLen, char *p_cValue,
+int alink_parse_request_CB(char *p_cName, int iNameLen, char *p_cValue,
                                int iValueLen, int iValueType, void *p_CBData)
 {
     int i;

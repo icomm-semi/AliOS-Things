@@ -218,7 +218,7 @@ int platform_udp_recvfrom(
 {
     int ret;
     struct sockaddr_in addr;
-    int addr_len = sizeof(addr);
+    size_t addr_len = sizeof(addr);
 
     ret = recvfrom((long)handle, buffer, length, 0, (struct sockaddr *)&addr,
                    &addr_len);
@@ -268,7 +268,7 @@ void *platform_tcp_server_create(_IN_ uint16_t port)
 void *platform_tcp_server_accept(_IN_ void *server)
 {
     struct sockaddr_in addr;
-    int addr_length = sizeof(addr);
+    size_t addr_length = sizeof(addr);
     long new_client;
 
     if ((new_client = accept((long)server, (struct sockaddr *)&addr,
