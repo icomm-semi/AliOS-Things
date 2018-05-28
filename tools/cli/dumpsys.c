@@ -5,6 +5,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <aos/aos.h>
+#include <stdlib.h>
 
 #ifdef OSAL_RHINO
 #include "k_api.h"
