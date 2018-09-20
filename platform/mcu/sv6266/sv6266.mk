@@ -18,7 +18,7 @@ $(NAME)_COMPONENTS += rhino hal netmgr middleware.common cjson digest_algorithm 
 $(NAME)_COMPONENTS += libc
 
 $(NAME)_COMPONENTS += platform/mcu/sv6266/$(SDKDIR)/components/bsp/soc/soc_init
-$(NAME)_COMPONENTS += platform/mcu/sv6266/$(SDKDIR)/projects/mac_atcmd/src/cfg
+$(NAME)_COMPONENTS += platform/mcu/sv6266/cfg
 
 $(NAME)_PREBUILT_LIBRARY := lib/bootloader.a
 $(NAME)_PREBUILT_LIBRARY += lib/rf_api.a
