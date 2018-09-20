@@ -2,6 +2,10 @@ NAME := activation
 
 GLOBAL_INCLUDES := .
 
+ifeq ($(HOST_ARCH), ANDES_N10)
+$(NAME)_PREBUILT_LIBRARY := ./ANDES_N10/activation.a
+endif
+
 ifeq ($(HOST_ARCH),ARM968E-S)
 $(NAME)_PREBUILT_LIBRARY := ./ARM968E-S/activation.a
 endif
@@ -29,4 +33,5 @@ else ifeq ($(HOST_MCU_FAMILY),esp8266)
 $(NAME)_PREBUILT_LIBRARY := ./xtensa/esp8266/activation.a
 endif
 endif
+
 
