@@ -14,8 +14,7 @@ HOST_OPENOCD := ICEman
 
 $(NAME)_TYPE := kernel
 
-$(NAME)_COMPONENTS += rhino hal netmgr framework.common cli cjson digest_algorithm alicrypto
-$(NAME)_COMPONENTS += protocols.net
+$(NAME)_COMPONENTS += rhino hal netmgr middleware.common cjson digest_algorithm alicrypto network.lwip
 $(NAME)_COMPONENTS += libc
 
 $(NAME)_COMPONENTS += platform/mcu/sv6266/$(SDKDIR)/components/bsp/soc/soc_init
@@ -112,7 +111,7 @@ GLOBAL_DEFINES += CONFIG_OS_RHINO
 # 0x00: reserved
 
 # 0x04: xtal
-XTAL := 25
+XTAL := 40
 GLOBAL_DEFINES += XTAL=$(XTAL)
 
 # 0x08: bus clock
@@ -129,7 +128,7 @@ XIP_BIT := 4
 GLOBAL_DEFINES += XIP_BIT=$(XIP_BIT)
 
 # 0x10: partition main size
-SETTING_PARTITION_MAIN_SIZE := 620K
+SETTING_PARTITION_MAIN_SIZE := 820K
 GLOBAL_DEFINES += SETTING_PARTITION_MAIN_SIZE=$(SETTING_PARTITION_MAIN_SIZE)
 
 # 0x14: flash total size
