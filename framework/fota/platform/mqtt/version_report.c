@@ -270,11 +270,11 @@ int version_report()
 
     char msg[MSG_REPORT_LEN]={0};
 
-    ret=aos_get_version_info(version, random_num, mac, chip_code, output, ACTIVE_INFO_LEN);
-    if(ret){
-        ACT_LOGE("aos_get_version_info failed");
-       return -1;
-    }
+    //ret=aos_get_version_info(version, random_num, mac, chip_code, output, ACTIVE_INFO_LEN);
+    //if(ret){
+    //    ACT_LOGE("aos_get_version_info failed");
+    //   return -1;
+    //}
 	
 	ACT_LOGD( "-----------------\n");
 	ACT_LOGD( "after aos_get_version_info output:\n" );
