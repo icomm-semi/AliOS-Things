@@ -186,4 +186,5 @@ $(NAME)_SOURCES :=	aos.c \
 					hal/ota_port.c \
                     hal/wifi_port.c \
                     $(SDKDIR)/components/net/tcpip/lwip-1.4.0/src/netif/ethernetif.c \
-					hal/hw.c
+					hal/hw.c \
+					hal/rf_cmd.c
