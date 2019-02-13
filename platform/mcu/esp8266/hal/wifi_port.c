@@ -240,9 +240,9 @@ bool ICACHE_FLASH_ATTR start_wifi_station(const char * ssid, const char * pass){
     }
     struct station_config config;
     memset(&config, 0, sizeof(struct station_config));
-    strcpy(config.ssid, ssid);
+    strncpy(config.ssid, ssid, sizeof(config.ssid) - 1);
     if(pass){
-        strcpy(config.password, pass);
+        strncpy(config.password, pass, sizeof(config.password) - 1);
     }
     if(!wifi_station_set_config(&config)){
         printf("Failed to set Station config!\n");
@@ -370,7 +370,7 @@ static int wifi_start(hal_wifi_module_t *m, hal_wifi_init_type_t *init_para)
 static int wifi_start_adv(hal_wifi_module_t *m, hal_wifi_init_type_adv_t *init_para_adv)
 {
     (void)init_para_adv;
- 
+
     return 0;
 }
 
@@ -439,10 +439,10 @@ static void scan_cb_helper(hal_wifi_module_t *m, struct bss_info *info, scan_typ
     }
 
     for (i = 0; info->next.stqe_next && i < ap_num; info = info->next.stqe_next, i++) {
-        LOGD("esp8266", "BSSID %02x:%02x:%02x:%02x:%02x:%02x channel %02d rssi %02d auth %02d %s\n", 
+        LOGD("esp8266", "BSSID %02x:%02x:%02x:%02x:%02x:%02x channel %02d rssi %02d auth %02d %s\n",
             MAC2STR(info->bssid),
-            info->channel, 
-            info->rssi, 
+            info->channel,
+            info->rssi,
             info->authmode,
             info->ssid
         );
@@ -627,10 +627,11 @@ void ICACHE_FLASH_ATTR sniffer_wifi_promiscuous_rx(uint8_t *buf, uint16_t buf_le
 {
     uint8_t *data;
     uint32_t data_len;
-    hal_wifi_link_info_t info;
+    hal_wifi_link_info_t info = {0};
 
     if (buf_len == sizeof(struct sniffer_buf2)) {/* managment frame */
         struct sniffer_buf2 *sniffer = (struct sniffer_buf2 *)buf;
+        info.rssi = sniffer->rx_ctrl.rssi;
         //if (!mngt_data_cb) return;
         data_len = sniffer->len;
         if (data_len > sizeof(sniffer->buf))
@@ -643,6 +644,7 @@ void ICACHE_FLASH_ATTR sniffer_wifi_promiscuous_rx(uint8_t *buf, uint16_t buf_le
         if (!data_cb) return;
         struct sniffer_buf *sniffer = (struct sniffer_buf *)buf;
         data = buf + sizeof(struct RxControl);
+        info.rssi = sniffer->rx_ctrl.rssi;
 
         struct ieee80211_hdr *hdr = (struct ieee80211_hdr *)data;
 
@@ -664,18 +666,18 @@ void ICACHE_FLASH_ATTR sniffer_wifi_promiscuous_rx(uint8_t *buf, uint16_t buf_le
 
 static void start_monitor(hal_wifi_module_t *m)
 {
-    uint8_t mac[6];
-    wifi_set_opmode(STATION_MODE);
-    wifi_get_macaddr(STATION_IF, mac);
+    wifi_set_mode(STATION_MODE);
+    wifi_station_disconnect();
     wifi_promiscuous_enable(0);
     wifi_set_promiscuous_rx_cb(sniffer_wifi_promiscuous_rx);
     wifi_promiscuous_enable(1);
-    wifi_promiscuous_set_mac(mac);
 }
 
 static void stop_monitor(hal_wifi_module_t *m)
 {
+    wifi_set_mode(STATION_MODE);
     wifi_promiscuous_enable(0);
+    wifi_set_promiscuous_rx_cb(NULL);
     data_cb = NULL;
 }
 

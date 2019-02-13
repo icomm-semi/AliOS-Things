@@ -1,4 +1,5 @@
 
+#include "platform_config.h"
 #include "platform_peripheral.h"
 #include "platform_logging.h"
 #include "wlan_platform_common.h"

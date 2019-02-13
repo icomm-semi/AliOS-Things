@@ -3,58 +3,27 @@
 
 #include "iot_import.h"
 
-#define PID_STR_MAXLEN              (64)
-#define MID_STR_MAXLEN              (64)
-#define PRODUCT_KEY_MAXLEN          (20)
-#define DEVICE_NAME_MAXLEN          (32)
-#define DEVICE_ID_MAXLEN            (64)
-#define DEVICE_SECRET_MAXLEN        (64)
-#define FIRMWARE_VERSION_MAXLEN     (32)
+#define _IN_          /* indicate that this is an input parameter */
+#define _OU_          /* indicate that this is an output parameter */
+#define IOT_TRUE (1)  /* indicate boolean value true */
+#define IOT_FALSE (0) /* indicate boolean value false */
+#define PID_STR_MAXLEN (64 + 1)
+#define MID_STR_MAXLEN (64 + 1)
+#define PRODUCT_KEY_MAXLEN (20 + 1)
+#define PRODUCT_SECRET_MAXLEN (64 + 1)
+#define DEVICE_NAME_MAXLEN (32 + 1)
+#define DEVICE_ID_MAXLEN (64 + 1)
+#define DEVICE_SECRET_MAXLEN (64 + 1)
+#define HAL_CID_LEN (64 + 1)
+#define FIRMWARE_VERSION_MAXLEN (32 + 1)
+#define IOTX_URI_MAX_LEN \
+    (135) /* IoTx CoAP/HTTP URI & MQTT topic maximal length */
 
 
-#ifdef ON_DAILY
-#define PRODUCT_KEY             "a1DPfXuJJsR"
-#define PRODUCT_SECRET          "M4yY1ggbRnWYXzU3"
-#define DEVICE_NAME             "test_3060_01"
-#define DEVICE_SECRET           "6BhvTPQqCEj48gIHChFQKCWgDjNnQX5f"
-#elif ON_PRE 
-#define PRODUCT_KEY             "a1DQA90NlFe"
-#define PRODUCT_SECRET          "0VDRjoQAbieMcYyZ"
-#define DEVICE_NAME             "jaVam0S5dTq8XKUoI2NW"
-#define DEVICE_SECRET           "IpGIaDsdUEpSvcOz237woypTlcxAV5RC"
-#elif ON_PRE2
-#define PRODUCT_KEY             "a1AzoSi5TMc"
-#define PRODUCT_SECRET          "Z9Ze6qgMrWgTOezW"
-#define DEVICE_NAME             "light_mxchip_00"
-#define DEVICE_SECRET           "T5DaOiKdR69BTOdEZduviliIsLQeM8Nn"
-#else
-#ifdef TEST_01
-#define PRODUCT_KEY             "a1AzoSi5TMc"
-#define PRODUCT_SECRET          "Z9Ze6qgMrWgTOezW"
-#define DEVICE_NAME             "test_light_01"
-#define DEVICE_SECRET           "fxJ0cs1KUB4eM128GGeopbGl6LiacPJB"
-#elif TEST_02
-#define PRODUCT_KEY             "a1AzoSi5TMc"
-#define PRODUCT_SECRET          "Z9Ze6qgMrWgTOezW"
-#define DEVICE_NAME             "test_light_02"
-#define DEVICE_SECRET           "rOip6mfWD3sxO6pO9maUBTEJ1AjmK8xe"
-#elif ESP8266
-#define PRODUCT_KEY             "a1AzoSi5TMc"
-#define PRODUCT_SECRET          "Z9Ze6qgMrWgTOezW"
-#define DEVICE_NAME             "ESP8266_cxf01"
-#define DEVICE_SECRET           "K2pM9rSaQecgx8Vo31yjM6vmsXuQA8r9"
-#elif  MQTT_TEST
-#define PRODUCT_KEY             "yfTuLfBJTiL"
-#define DEVICE_NAME             "TestDeviceForDemo"
-#define DEVICE_SECRET           "fSCl9Ns5YPnYN8Ocg0VEel1kXFnRlV6c"
-#define PRODUCT_SECRET          ""
-#else
-#define PRODUCT_KEY             "a1AzoSi5TMc"
-#define PRODUCT_SECRET          "Z9Ze6qgMrWgTOezW"
-#define DEVICE_NAME             "test_light_03"
-#define DEVICE_SECRET           "oIdAOeech8fM7aHtq0QSvV1oSle30SxP"
-#endif
-#endif
+#define PRODUCT_KEY "a1AzoSi5TMc"
+#define PRODUCT_SECRET "Z9Ze6qgMrWgTOezW"
+#define DEVICE_NAME "light_alen_02"
+#define DEVICE_SECRET "gCV7RxK6yM7bLsA2vBjy2v6kL7WjY9n2"
 
 /**
  * @brief   获取设备的`Partner ID`, 仅用于紧密合作伙伴
@@ -112,7 +81,6 @@ int HAL_GetDeviceID(_OU_ char device_id[DEVICE_ID_MAXLEN]);
  */
 int HAL_GetFirmwareVesion(_OU_ char version[FIRMWARE_VERSION_MAXLEN]);
 
-#define HAL_CID_LEN (64 + 1)
 /**
  * @brief   获取唯一的芯片ID字符串
  *
@@ -121,4 +89,24 @@ int HAL_GetFirmwareVesion(_OU_ char version[FIRMWARE_VERSION_MAXLEN]);
  */
 char *HAL_GetChipID(_OU_ char cid_str[HAL_CID_LEN]);
 
-#endif  /* __IMPORT_PRODUCT_H__ */
+typedef struct _hal_wireless_info_t
+{
+    char  mac[6];  /* parent'mac, such as Ap's bssid. */
+    int   rssi;    /* wireless RSSI, range of [-127 : -1]. */
+    int   band;    /*wireless band, 0: wifi 2.4G, 1: wifi 5G, ... */
+    int   snr;     /* wireless SNR. */
+    int   channel; /* wireless channel. */
+    float tx_rate; /* 0.25 : 250Kbps, 1: 1Mbps，2: 2Mbps，5.5: 5.5Mbps，...*/
+    float rx_rate; /* 0.25 : 250Kbps, 1: 1Mbps，2: 2Mbps，5.5: 5.5Mbps，...*/
+} hal_wireless_info_t;
+/**
+ * @brief   获取无线信号信息
+ *
+ * @param   wireless_info : 存放获取无线信号信息的缓冲区
+ * @return  执行结果
+ *   0:  success
+ *   -1: failure
+ */
+int HAL_GetWirelessInfo(_OU_ hal_wireless_info_t *wireless_info);
+
+#endif /* __IMPORT_PRODUCT_H__ */

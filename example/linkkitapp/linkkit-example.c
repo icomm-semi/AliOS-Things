@@ -29,6 +29,8 @@
 #include "iot_export.h"
 #include "iot_export_mqtt.h"
 #include "linkkit_app.h"
+//#include "awss.h"
+//#include "awss_cmp.h"
 #ifdef AOS_ATCMD
 #include <atparser.h>
 #endif
@@ -36,11 +38,11 @@
 #include <signal.h>
 #endif
 
-static int linkkit_started = 0;
-static int awss_running = 0;
+static char linkkit_started = 0;
+static char awss_running = 0;
 
 void reboot_system(void *parms);
-int awss_success_notify();
+void start_linkkitapp(void *parms);
 static void wifi_service_event(input_event_t *event, void *priv_data)
 {
     if (event->type != EV_WIFI) {
@@ -60,19 +62,16 @@ static void wifi_service_event(input_event_t *event, void *priv_data)
         return;
     }
 
-    /* reduce the time of net config for 3080/3165 */
-    if (awss_running) {
-#ifdef AWSS_NEED_REBOOT
-        aos_post_delayed_action(200, reboot_system, NULL);
-        return;
-#endif
-    }
     if (!linkkit_started) {
-        awss_success_notify();
-        linkkit_app();
-        awss_success_notify();
+        aos_post_delayed_action(50, start_linkkitapp, NULL);
         linkkit_started = 1;
     }
+}
+
+void start_linkkitapp(void *parms)
+{
+    LOG("linkkit app");
+    linkkit_app();
 }
 
 void reboot_system(void *parms)
@@ -83,7 +82,6 @@ void reboot_system(void *parms)
 
 static void cloud_service_event(input_event_t *event, void *priv_data)
 {
-    static uint8_t awss_reported = 0;
     if (event->type != EV_YUNIO) {
         return;
     }
@@ -92,10 +90,6 @@ static void cloud_service_event(input_event_t *event, void *priv_data)
 
     if (event->code == CODE_YUNIO_ON_CONNECTED) {
         LOG("user sub and pub here");
-        if (!awss_reported) {
-            awss_report_cloud();
-            awss_reported = 1;
-        }
         return;
     }
 
@@ -106,10 +100,8 @@ static void cloud_service_event(input_event_t *event, void *priv_data)
 static void start_netmgr(void *p)
 {
     netmgr_start(true);
-    //aos_task_exit(0);
+    aos_task_exit(0);
 }
-
-extern int awss_report_reset();
 
 void do_awss_active()
 {
@@ -118,6 +110,8 @@ void do_awss_active()
     awss_config_press();
 }
 
+extern int awss_report_reset();
+
 static void do_awss_reset()
 {
     if (linkkit_started) {
@@ -125,7 +119,7 @@ static void do_awss_reset()
     }
     netmgr_clear_ap_config();
     LOG("SSID cleared. Please reboot the system.\n");
-    aos_post_delayed_action(1000, reboot_system, NULL);
+    aos_post_delayed_action(2000, reboot_system, NULL);
 }
 
 void linkkit_key_process(input_event_t *eventinfo, void *priv_data)

@@ -643,7 +643,7 @@ int _aos_timer_change_no_repeat(aos_timer_t *timer, int ms)
     if (ret != RHINO_SUCCESS) {
         return ret;
     }
-
+ 
     ret = krhino_timer_change(timer->hdl, MS2TICK(ms), 0);
     if (ret == RHINO_SUCCESS) {
         return 0;
@@ -700,8 +700,8 @@ u32  _aos_timerChangePeriodFromISR( _timerHandle xTimer,
 	if(xNewPeriod == 0)
 		xNewPeriod += 1;
 
-        (u32)aos_timer_stop(&xTimer->timer);	
-        
+        (u32)aos_timer_stop(&xTimer->timer);	    
+    
 	return !aos_timer_change(&xTimer->timer, xNewPeriod);	
 }
 

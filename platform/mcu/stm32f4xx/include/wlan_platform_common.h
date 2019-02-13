@@ -6,6 +6,7 @@
 #pragma once
 
 #include "platform_peripheral.h"
+#include "platform_config.h"
 
 #ifdef __cplusplus
 extern "C" {

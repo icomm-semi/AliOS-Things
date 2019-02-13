@@ -2,6 +2,8 @@
 /* Includes ------------------------------------------------------------------*/
 #include "platform_logging.h"
 #include "platform_peripheral.h"
+#include "platform.h"
+#include "platform_config.h"
 #include "stdio.h"
 
 #ifdef USE_MICO_SPI_FLASH
