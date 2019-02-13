@@ -33,13 +33,14 @@ GLOBAL_LDFLAGS   += -L platform/mcu/esp32/bsp/ld
 
 GLOBAL_DEFINES   += CONFIG_AOS_KV_BUFFER_SIZE=8192
 GLOBAL_DEFINES   += CONFIG_AOS_CLI_BOARD
+GLOBAL_DEFINES   += CONFIG_AOS_CLI_STACK_SIZE=4096
+GLOBAL_DEFINES   += TEST_CONFIG_STACK_SIZE=2048
 
 $(NAME)_SOURCES  := bsp/entry.c
 $(NAME)_SOURCES  += bsp/setboot_cli.c
 $(NAME)_SOURCES  += hal/uart.c
 $(NAME)_SOURCES  += hal/flash.c
 $(NAME)_SOURCES  += hal/wifi_port.c
-$(NAME)_SOURCES  += hal/ota_port.c
 ifeq ($(ble),1)
 $(NAME)_SOURCES  += hal/ais_ota_port.c
 endif

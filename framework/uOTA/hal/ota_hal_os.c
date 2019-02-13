@@ -12,154 +12,98 @@
 #include <string.h>
 #include "ota_hal_os.h"
 #include "ota_log.h"
-#include "crc.h"
+#if !defined (AOS_OTA_RSA)
+#include "mbedtls/sha256.h"
+#include "mbedtls/md5.h"
+#include "mbedtls/base64.h"
+#endif
+#if (OTA_SIGNAL_CHANNEL) == 1
 #include "iot_export.h"
+#include "iot_import.h"
 #include "iot_export_coap.h"
-#include "mqtt_instance.h"
+#endif
 
-#ifdef _PLATFORM_IS_LINUX_
+#if (OTA_SIGNAL_CHANNEL) == 2
+#include "iot_import.h"
+#endif
+
+#ifdef OTA_LINUX
 #include <unistd.h>
-#include <sys/reboot.h>
 #include <semaphore.h>
 #include <pthread.h>
+#include <sys/reboot.h>
 #else
-#include <aos/aos.h>
-#include <aos/yloop.h>
-#include <hal/hal.h>
+#include "aos/kernel.h"
+#include "aos/kv.h"
+
 #endif
 
-#ifdef IS_ESP8266
-#define DEFAULT_THREAD_PRI 32
-#else
-#define DEFAULT_THREAD_PRI 10
-#endif
-
-const char *iotx_ca_get(void);
-int IOT_CoAP_ParseOption_block(void *p_message, int type, unsigned int *num,
-                               unsigned int *more, unsigned int *size);
-int IOT_CoAP_SendMessage_block(iotx_coap_context_t *p_context, char *p_path,
-                               iotx_message_t *p_message,
-                               unsigned int block_type, unsigned int num,
-                               unsigned int more, unsigned int size);
-#ifndef _IS_LINKKIT_
-void *ota_malloc(uint32_t size)
+/*Memory realloc*/
+void *ota_realloc(void *ptr, int size)
 {
-#ifndef _PLATFORM_IS_LINUX_
+#if defined OTA_WITH_LINKKIT
+    return HAL_Realloc(ptr, size);
+#elif !defined OTA_LINUX
+    return aos_realloc(ptr, size);
+#else
+    return realloc(ptr, size);
+#endif
+}
+
+/*Memory calloc*/
+void *ota_calloc(int n, int size)
+{
+#if defined OTA_WITH_LINKKIT
+    return HAL_Malloc(size);
+#elif !defined OTA_LINUX
+    return aos_calloc(n, size);
+#else
+    return calloc(n, size);
+#endif
+}
+
+/*Reboot*/
+void ota_reboot(void)
+{
+#if defined OTA_WITH_LINKKIT
+    HAL_Reboot();
+#elif !defined OTA_LINUX
+    aos_reboot();
+#else
+    reboot(0x1234567);
+#endif
+}
+
+/*Memory malloc*/
+void *ota_malloc(int size)
+{
+#if defined OTA_WITH_LINKKIT
+    return HAL_Malloc(size);
+#elif !defined OTA_LINUX
     return aos_malloc(size);
 #else
     return malloc(size);
 #endif
 }
 
+/*Memory free*/
 void ota_free(void *ptr)
 {
-#ifndef _PLATFORM_IS_LINUX_
+#if defined OTA_WITH_LINKKIT
+    return HAL_Free(ptr);
+#elif !defined OTA_LINUX
     aos_free(ptr);
 #else
     free(ptr);
 #endif
 }
-#endif
 
-void *ota_zalloc(uint32_t size)
+/*Semaphore init*/
+void *ota_semaphore_create(void)
 {
-#ifndef _PLATFORM_IS_LINUX_
-    return aos_zalloc(size);
-#else
-    return calloc(size, 1);
-#endif
-}
-
-void *ota_realloc(void *ptr, uint32_t size)
-{
-#ifndef _PLATFORM_IS_LINUX_
-    return aos_realloc(ptr, size);
-#else
-    return realloc(ptr, size);
-#endif
-}
-void *ota_mutex_init(void)
-{
-#ifndef _PLATFORM_IS_LINUX_
-    aos_mutex_t *mutex = (aos_mutex_t *)ota_malloc(sizeof(aos_mutex_t));
-    if (NULL == mutex) {
-        return NULL;
-    }
-
-    if (0 != aos_mutex_new(mutex)) {
-        ota_free(mutex);
-        return NULL;
-    }
-#else
-    pthread_mutex_t *mutex =
-      (pthread_mutex_t *)ota_malloc(sizeof(pthread_mutex_t));
-    if (NULL == mutex) {
-        return NULL;
-    }
-    if (0 != pthread_mutex_init(mutex, NULL)) {
-        ota_free(mutex);
-        return NULL;
-    }
-
-    OTA_LOG_I("HAL_MutexCreate:%p\n", mutex);
-#endif
-
-    return mutex;
-}
-
-int ota_mutex_lock(void *mutex)
-{
-#ifndef _PLATFORM_IS_LINUX_
-    return aos_mutex_lock((aos_mutex_t *)mutex, AOS_WAIT_FOREVER);
-#else
-    if (NULL == mutex) {
-        return 0;
-    }
-    if (0 != pthread_mutex_lock((pthread_mutex_t *)mutex)) {
-        OTA_LOG_E("lock mutex failed");
-    }
-#endif
-    return 0;
-}
-
-int ota_mutex_unlock(void *mutex)
-{
-#ifndef _PLATFORM_IS_LINUX_
-    return aos_mutex_unlock((aos_mutex_t *)mutex);
-#else
-    if (NULL == mutex) {
-        return 0;
-    }
-    if (0 != pthread_mutex_unlock((pthread_mutex_t *)mutex)) {
-        OTA_LOG_E("unlock mutex failed");
-    }
-#endif
-    return 0;
-}
-
-void ota_mutex_destroy(void *mutex)
-{
-#ifndef _PLATFORM_IS_LINUX_
-    aos_mutex_free((aos_mutex_t *)mutex);
-    aos_free(mutex);
-#else
-    if (mutex == NULL) {
-        OTA_LOG_E("mutex null.");
-        return;
-    }
-
-    if (0 != pthread_mutex_destroy((pthread_mutex_t *)mutex)) {
-        OTA_LOG_E("destroy mutex failed");
-    }
-
-    OTA_LOG_I("HAL_MutexDestroy:%p\n", mutex);
-    ota_free(mutex);
-#endif
-}
-
-void *ota_semaphore_init(void)
-{
-#ifndef _PLATFORM_IS_LINUX_
+#if defined OTA_WITH_LINKKIT
+    return HAL_SemaphoreCreate();
+#elif !defined OTA_LINUX
     aos_sem_t *sem = (aos_sem_t *)ota_malloc(sizeof(aos_sem_t));
     if (NULL == sem) {
         return NULL;
@@ -169,6 +113,7 @@ void *ota_semaphore_init(void)
         ota_free(sem);
         return NULL;
     }
+    return sem;
 #else
     sem_t *sem = (sem_t *)ota_malloc(sizeof(sem_t));
     if (NULL == sem) {
@@ -179,16 +124,19 @@ void *ota_semaphore_init(void)
         ota_free(sem);
         return NULL;
     }
-#endif
     return sem;
+#endif
 }
 
-int ota_semaphore_wait(void *sem, int32_t timeout_ms)
+/*Semaphore wait*/
+int ota_semaphore_wait(void *sem, int ms)
 {
-#ifndef _PLATFORM_IS_LINUX_
-    return aos_sem_wait((aos_sem_t *)sem, timeout_ms);
+#if defined OTA_WITH_LINKKIT
+    return HAL_SemaphoreWait(sem, ms);
+#elif !defined OTA_LINUX
+    return aos_sem_wait((aos_sem_t *)sem, ms);
 #else
-    if ((~0) == timeout_ms) {
+    if ((~0) == ms) {
         sem_wait(sem);
         return 0;
     } else {
@@ -199,36 +147,38 @@ int ota_semaphore_wait(void *sem, int32_t timeout_ms)
             if (clock_gettime(CLOCK_REALTIME, &ts) == -1) {
                 return -1;
             }
-
             s = 0;
-            ts.tv_nsec += (timeout_ms % 1000) * 1000000;
+            ts.tv_nsec += (ms % 1000) * 1000000;
             if (ts.tv_nsec >= 1000000000) {
                 ts.tv_nsec -= 1000000000;
                 s = 1;
             }
-
-            ts.tv_sec += timeout_ms / 1000 + s;
-
+            ts.tv_sec += ms / 1000 + s;
         } while (((s = sem_timedwait(sem, &ts)) != 0) && errno == EINTR);
-
         return (s == 0) ? 0 : -1;
     }
-#endif
     return 0;
+#endif
 }
 
+/*Semaphore post*/
 void ota_semaphore_post(void *sem)
 {
-#ifndef _PLATFORM_IS_LINUX_
+#if defined OTA_WITH_LINKKIT
+    return HAL_SemaphorePost(sem);
+#elif !defined OTA_LINUX
     aos_sem_signal((aos_sem_t *)sem);
 #else
     sem_post((sem_t *)sem);
 #endif
 }
 
+/*Semaphore destroy*/
 void ota_semaphore_destroy(void *sem)
 {
-#ifndef _PLATFORM_IS_LINUX_
+#if defined OTA_WITH_LINKKIT
+    return HAL_SemaphoreDestroy(sem);
+#elif !defined OTA_LINUX
     aos_sem_free((aos_sem_t *)sem);
     aos_free(sem);
 #else
@@ -237,42 +187,25 @@ void ota_semaphore_destroy(void *sem)
 #endif
 }
 
-uint32_t ota_now_ms(void)
+/*Sleep ms*/
+void ota_msleep(int ms)
 {
-    uint32_t time_ms;
-#ifndef _PLATFORM_IS_LINUX_
-    return aos_now_ms();
-#else
-    struct timeval tv = { 0 };
-    gettimeofday(&tv, NULL);
-    time_ms = tv.tv_sec * 1000 + tv.tv_usec / 1000;
-#endif
-    return time_ms;
-}
-
-void ota_msleep(uint32_t ms)
-{
-#ifndef _PLATFORM_IS_LINUX_
+#if defined OTA_WITH_LINKKIT
+    return HAL_SleepMs(ms);
+#elif !defined OTA_LINUX
     aos_msleep(ms);
 #else
     usleep(1000 * ms);
 #endif
 }
 
-void ota_reboot(void)
-{
-#ifndef _PLATFORM_IS_LINUX_
-    aos_reboot();
-#else
-    reboot(0);
-#endif
-}
-
-#ifndef _PLATFORM_IS_LINUX_
+#if defined OTA_WITH_LINKKIT
+    ;
+#elif !defined OTA_LINUX
 typedef struct
 {
     aos_task_t task;
-    int        detached;
+    int       detached;
     void *     arg;
     void *(*routine)(void *arg);
 } task_context_t;
@@ -289,45 +222,29 @@ static void task_wrapper(void *arg)
     }
 }
 #endif
-#define DEFAULT_THREAD_NAME "AosThread"
-#define DEFAULT_THREAD_SIZE 4096
-
-int ota_thread_create(void **thread_handle, void *(*work_routine)(void *),
-                      void *arg, void *param, int *stack_used)
+#define OTA_THREAD_NAME "OTA_Thread"
+#define OTA_THREAD_SIZE 4096
+#define OTA_THREAD_PRI 30
+/*Thread create*/
+int ota_thread_create(void **thread_handle, void *(*work_routine)(void *), void *arg, void *pm, int stack_size)
 {
     int ret = -1;
-#ifndef _PLATFORM_IS_LINUX_
-    char *                 tname;
-    uint32_t               ssiz;
-    int                    detach_state        = 0;
-    hal_os_thread_param_t *hal_os_thread_param = (hal_os_thread_param_t *)param;
-    if (hal_os_thread_param) {
-        detach_state = hal_os_thread_param->detach_state;
-    }
-    if (!hal_os_thread_param || !hal_os_thread_param->name) {
-        tname = DEFAULT_THREAD_NAME;
-    } else {
-        tname = hal_os_thread_param->name;
-    }
-
-    if (!hal_os_thread_param || hal_os_thread_param->stack_size == 0) {
-        ssiz = DEFAULT_THREAD_SIZE;
-    } else {
-        ssiz = hal_os_thread_param->stack_size;
+#if defined OTA_WITH_LINKKIT
+    ret = HAL_ThreadCreate(thread_handle, work_routine, arg, NULL, 0);
+#elif !defined OTA_LINUX
+    char * tname = OTA_THREAD_NAME;
+    if(stack_size <= 0) {
+        stack_size = OTA_THREAD_SIZE;
     }
     task_context_t *task = aos_malloc(sizeof(task_context_t));
     if (!task) {
         return -1;
     }
     memset(task, 0, sizeof(task_context_t));
-
     task->arg      = arg;
     task->routine  = work_routine;
-    task->detached = detach_state;
 
-    ret = aos_task_new_ext(&task->task, tname, task_wrapper, task, ssiz,
-                           DEFAULT_THREAD_PRI);
-
+    ret = aos_task_new_ext(&task->task, tname, task_wrapper, task, stack_size, OTA_THREAD_PRI);
     *thread_handle = (void *)task;
 #else
     ret = pthread_create((pthread_t *)thread_handle, NULL, work_routine, arg);
@@ -335,142 +252,43 @@ int ota_thread_create(void **thread_handle, void *(*work_routine)(void *),
     return ret;
 }
 
+/*Thread exit*/
 void ota_thread_exit(void *thread)
 {
-#ifndef _PLATFORM_IS_LINUX_
+#if defined OTA_WITH_LINKKIT
+    return HAL_ThreadDelete(thread);
+#elif !defined OTA_LINUX
     aos_task_exit(0);
 #else
     pthread_exit(0);
 #endif
 }
 
-
-#ifndef _PLATFORM_IS_LINUX_
-#define OTA_KV_START "ota.kv_%s"
-
+#if defined OTA_WITH_LINKKIT
+/*KV set*/
 int ota_kv_set(const char *key, const void *val, int len, int sync)
 {
-    int ret = 0;
-    ret     = aos_kv_set(key, val, len, sync);
-    return ret;
+    return HAL_Kv_Set(key, val, len, sync);
+}
+/*KV get*/
+int ota_kv_get(const char *key, void *buffer, int *len)
+{
+    return HAL_Kv_Get(key, buffer, len);
 }
 
-int ota_kv_get(const char *key, void *buffer, int *buffer_len)
+#elif !defined OTA_LINUX
+/*KV set*/
+int ota_kv_set(const char *key, const void *val, int len, int sync)
 {
-    int ret = 0;
-    ret     = aos_kv_get(key, buffer, buffer_len);
-    return ret;
+    return aos_kv_set(key, val, len, sync);
 }
 
-int ota_kv_del(const char *key)
+/*KV get*/
+int ota_kv_get(const char *key, void *buffer, int *len)
 {
-    int ret = 0;
-    ret     = aos_kv_del(key);
-    return ret;
+    return aos_kv_get(key, buffer, len);
 }
 
-int ota_kv_erase_all(void)
-{
-    return aos_kv_del_by_prefix("ota_");
-}
-
-typedef struct
-{
-    const char *name;
-    int         ms;
-    aos_call_t  cb;
-    void *      data;
-} schedule_timer_t;
-
-
-static void schedule_timer(void *p)
-{
-    if (p == NULL) {
-        return;
-    }
-
-    schedule_timer_t *pdata = p;
-    aos_post_delayed_action(pdata->ms, pdata->cb, pdata->data);
-}
-
-static void schedule_timer_cancel(void *p)
-{
-    if (p == NULL) {
-        return;
-    }
-
-    schedule_timer_t *pdata = p;
-    aos_cancel_delayed_action(pdata->ms, pdata->cb, pdata->data);
-}
-
-static void schedule_timer_delete(void *p)
-{
-    if (p == NULL) {
-        return;
-    }
-
-    schedule_timer_t *pdata = p;
-    aos_cancel_delayed_action(pdata->ms, pdata->cb, pdata->data);
-    aos_free(p);
-}
-
-#define USE_YLOOP
-void *ota_timer_create(const char *name, void (*func)(void *), void *user_data)
-{
-#ifdef USE_YLOOP
-    schedule_timer_t *timer =
-      (schedule_timer_t *)aos_malloc(sizeof(schedule_timer_t));
-    if (timer == NULL) {
-        return NULL;
-    }
-
-    timer->name = name;
-    timer->cb   = func;
-    timer->data = user_data;
-
-    return timer;
-#else
-    return NULL;
-#endif
-}
-
-int ota_timer_start(void *t, int ms)
-{
-#ifdef USE_YLOOP
-    if (t == NULL) {
-        return -1;
-    }
-    schedule_timer_t *timer = t;
-    timer->ms               = ms;
-    return aos_schedule_call(schedule_timer, t);
-#else
-    return 0;
-#endif
-}
-
-int ota_timer_stop(void *t)
-{
-#ifdef USE_YLOOP
-    if (t == NULL) {
-        return -1;
-    }
-
-    return aos_schedule_call(schedule_timer_cancel, t);
-#else
-    return 0;
-#endif
-}
-int ota_timer_delete(void *timer)
-{
-#ifdef USE_YLOOP
-    if (timer == NULL) {
-        return -1;
-    }
-    return aos_schedule_call(schedule_timer_delete, timer);
-#else
-    return 0;
-#endif
-}
 #else
 #define KV_FILE_PATH "./uota.kv"
 #define ITEM_MAX_KEY_LEN 128
@@ -481,8 +299,6 @@ typedef struct
 {
     int flag;
     int val_len;
-    int crc32;
-    int reserved[ITEM_LEN - ITEM_MAX_KEY_LEN - ITEM_MAX_VAL_LEN - 12];
 } kv_state_t;
 
 typedef struct
@@ -498,526 +314,443 @@ static int hal_fopen(FILE **fp, int *size, int *num)
 {
     /* create an file to save the kv */
     if ((*fp = fopen(KV_FILE_PATH, "a+")) == NULL) {
-        OTA_LOG_E("fopen(create) %s error:%s\n", KV_FILE_PATH, strerror(errno));
+        OTA_LOG_E("open err:%s\n", strerror(errno));
         return -1;
     }
-
     fseek(*fp, 0L, SEEK_END);
-
-    OTA_LOG_I("ftell:%d\n", (int)ftell(*fp));
     if ((*size = ftell(*fp)) % ITEM_LEN) {
-        OTA_LOG_E("%s is not an kv file\n", KV_FILE_PATH);
         fclose(*fp);
         return -1;
     }
-
     *num = ftell(*fp) / ITEM_LEN;
-
     fseek(*fp, 0L, SEEK_SET);
-
-    OTA_LOG_I("file size:%d, block num:%d\n", *size, *num);
-
     return 0;
 }
-/* pthread mutex protect */
+/*KV set*/
 int ota_kv_set(const char *key, const void *val, int len, int sync)
 {
     FILE *fp = NULL;
     int file_size = 0, block_num = 0, ret = 0, cur_pos = 0;
     kv_t kv_item;
     int i;
-
     /* check parameter */
     if (key == NULL || val == NULL) {
         return -1;
     }
-
     pthread_mutex_lock(&mutex_kv);
     if (hal_fopen(&fp, &file_size, &block_num) != 0) {
-        goto _hal_set_error;
+        goto ERR;
     }
-
     for (i = 0; i < block_num; i++) {
         memset(&kv_item, 0, sizeof(kv_t));
         cur_pos = ftell(fp);
         /* read an kv item(512 bytes) from file */
         if ((ret = fread(&kv_item, 1, ITEM_LEN, fp)) != ITEM_LEN) {
-            goto _hal_set_error;
+            goto ERR;
         }
-
         /* key compared */
         if (strcmp(kv_item.key, key) == 0) {
-            OTA_LOG_I("HAL_Kv_Set@key compared:%s\n", key);
             /* set value and write to file */
             memset(kv_item.val, 0, ITEM_MAX_VAL_LEN);
             memcpy(kv_item.val, val, len);
             kv_item.state.val_len = len;
-            CRC32_Context ctx;
-            CRC32_Init(&ctx);
-            CRC32_Update(&ctx, val, len);
-            CRC32_Final(&ctx, (uint32_t *)&kv_item.state.crc32);
             fseek(fp, cur_pos, SEEK_SET);
             fwrite(&kv_item, 1, ITEM_LEN, fp);
-
-            goto _hal_set_ok;
+            goto END;
         }
     }
 
-    OTA_LOG_I("HAL_Kv_Set key:%s\n", key);
     /* key not compared, append an kv to file */
     memset(&kv_item, 0, sizeof(kv_t));
     strcpy(kv_item.key, key);
     memcpy(kv_item.val, val, len);
     kv_item.state.val_len = len;
-    CRC32_Context ctx;
-    CRC32_Init(&ctx);
-    CRC32_Update(&ctx, val, len);
-    CRC32_Final(&ctx, (uint32_t *)&kv_item.state.crc32);
-
     fseek(fp, 0L, SEEK_END);
     fwrite(&kv_item, 1, ITEM_LEN, fp);
-
-    goto _hal_set_ok;
-
-_hal_set_error:
+    goto END;
+ERR:
     if (fp == NULL) {
         pthread_mutex_unlock(&mutex_kv);
         return -1;
     }
-    OTA_LOG_E("read %s error:%s\n", KV_FILE_PATH, strerror(errno));
+    OTA_LOG_E("read err:%s\n", strerror(errno));
     fflush(fp);
     fclose(fp);
     pthread_mutex_unlock(&mutex_kv);
 
     return -1;
-_hal_set_ok:
+END:
     fflush(fp);
     fclose(fp);
     pthread_mutex_unlock(&mutex_kv);
-
     return 0;
 }
 
-/* 0: get key ok
-   -1: get key failed or read file error
-*/
-int ota_kv_get(const char *key, void *buffer, int *buffer_len)
+/*KV get*/
+int ota_kv_get(const char *key, void *buffer, int *len)
 {
     FILE *fp = NULL;
     int i;
     /* read from file */
     int file_size = 0, block_num = 0;
     kv_t kv_item;
-
     /* check parameter */
-    if (key == NULL || buffer == NULL || buffer_len == NULL) {
+    if (key == NULL || buffer == NULL || len == NULL) {
         return -1;
     }
-
     pthread_mutex_lock(&mutex_kv);
-
     if (hal_fopen(&fp, &file_size, &block_num) != 0) {
-        goto _hal_get_error;
+        goto ERR;
     }
-
     for (i = 0; i < block_num; i++) {
         memset(&kv_item, 0, sizeof(kv_t));
         /* read an kv item(512 bytes) from file */
         if (fread(&kv_item, 1, ITEM_LEN, fp) != ITEM_LEN) {
-            goto _hal_get_error;
+            goto ERR;
         }
-
         /* key compared */
         if (strcmp(kv_item.key, key) == 0) {
-            OTA_LOG_I("HAL_Kv_Get@key compared:%s\n", key);
             /* set value and write to file */
-            *buffer_len = kv_item.state.val_len;
-            memcpy(buffer, kv_item.val, *buffer_len);
-
-            goto _hal_get_ok;
+            *len = kv_item.state.val_len;
+            memcpy(buffer, kv_item.val, *len);
+            goto END;
         }
     }
-
-    OTA_LOG_I("can not find the key:%s\n", key);
-
-    goto _hal_get_ok;
-
-_hal_get_error:
+    goto END;
+ERR:
     if (fp == NULL) {
         pthread_mutex_unlock(&mutex_kv);
         return -1;
     }
-    OTA_LOG_E("read %s error:%s\n", KV_FILE_PATH, strerror(errno));
+    OTA_LOG_E("read err:%s\n", strerror(errno));
     fflush(fp);
     fclose(fp);
     pthread_mutex_unlock(&mutex_kv);
-
     return -1;
-_hal_get_ok:
+END:
     fflush(fp);
     fclose(fp);
     pthread_mutex_unlock(&mutex_kv);
-
     return 0;
 }
+#endif /*Linux end*/
 
-int ota_kv_del(const char *key)
+/*Socket API*/
+void* ota_socket_connect(char *host, int port)
 {
-    FILE *fp = NULL;
-    int i;
-    /* read from file */
-    int file_size = 0, block_num = 0, cur_pos = 0;
-    kv_t kv_item;
-    kv_t kv_item_last;
+   #ifdef OTA_WITH_LINKKIT
+   return (void*)HAL_TCP_Establish(host, port);
+   #else
+   return 0;
+   #endif
+}
 
-    /* check parameter */
-    if (key == NULL) {
+int ota_socket_send(void* fd, char *buf, int len)
+{
+   #ifdef OTA_WITH_LINKKIT
+   return HAL_TCP_Write((uintptr_t)fd, buf, len, OTA_SSL_TIMEOUT);
+   #else
+   return 0;
+   #endif
+}
+
+int ota_socket_recv(void* fd, char *buf, int len)
+{
+   #ifdef OTA_WITH_LINKKIT
+   return HAL_TCP_Read((uintptr_t)fd, buf, len, OTA_SSL_TIMEOUT);
+   #else
+   return 0;
+   #endif
+}
+
+void ota_socket_close(void* fd)
+{
+   #ifdef OTA_WITH_LINKKIT
+   HAL_TCP_Destroy((uintptr_t)fd);
+   #endif
+}
+
+/*SSL connect*/
+void *ota_ssl_connect(const char *host, unsigned short port, const char *ca_crt, int ca_crt_len)
+{
+    #ifdef OTA_WITH_LINKKIT
+    return (void*)HAL_SSL_Establish(host, port, ca_crt, ca_crt_len);
+    #else
+    return 0;
+    #endif
+}
+
+/*SSL send*/
+int ota_ssl_send(void *ssl, char *buf, int len)
+{
+    #ifdef OTA_WITH_LINKKIT
+    return HAL_SSL_Write((uintptr_t)ssl, buf, len, OTA_SSL_TIMEOUT);
+    #else
+    return 0;
+    #endif
+}
+
+/*SSL recv*/
+int ota_ssl_recv(void *ssl, char *buf, int len)
+{
+    #ifdef OTA_WITH_LINKKIT
+    return HAL_SSL_Read((uintptr_t)ssl, buf, len, OTA_SSL_TIMEOUT);
+    #else
+    return 0;
+    #endif
+}
+
+#if !defined (AOS_OTA_RSA)
+/*SHA256*/
+extern void mbedtls_sha256_free_alt(mbedtls_sha256_context* ctx);
+extern void mbedtls_sha256_init_alt(mbedtls_sha256_context*ctx);
+extern void mbedtls_sha256_starts_alt(mbedtls_sha256_context*ctx, int is224);
+extern void mbedtls_sha256_update_alt(mbedtls_sha256_context*ctx, const unsigned char *input, unsigned int ilen);
+extern void mbedtls_sha256_finish_alt(mbedtls_sha256_context*ctx, unsigned char output[32]);
+
+void ota_sha256_free(ota_sha256_context *ctx)
+{
+    mbedtls_sha256_free_alt((mbedtls_sha256_context*)ctx);
+}
+
+void ota_sha256_init(ota_sha256_context *ctx)
+{
+    mbedtls_sha256_init_alt((mbedtls_sha256_context*)ctx);
+}
+
+void ota_sha256_starts(ota_sha256_context *ctx, int is224)
+{
+    mbedtls_sha256_starts_alt((mbedtls_sha256_context*)ctx, is224);
+}
+
+void ota_sha256_update(ota_sha256_context *ctx, const unsigned char *input, unsigned int ilen)
+{
+    mbedtls_sha256_update_alt((mbedtls_sha256_context*)ctx, input, ilen);
+}
+
+void ota_sha256_finish(ota_sha256_context *ctx, unsigned char output[32])
+{
+    mbedtls_sha256_finish_alt((mbedtls_sha256_context*)ctx, output);
+}
+/*MD5*/
+extern void mbedtls_md5_free_alt(mbedtls_md5_context*ctx);
+extern void mbedtls_md5_init_alt(mbedtls_md5_context*ctx);
+extern void mbedtls_md5_starts_alt(mbedtls_md5_context*ctx);
+extern void mbedtls_md5_update_alt(mbedtls_md5_context*ctx, const unsigned char *input, unsigned int ilen);
+extern void mbedtls_md5_finish_alt(mbedtls_md5_context*ctx, unsigned char output[32]);
+
+void ota_md5_free(ota_md5_context *ctx)
+{
+    mbedtls_md5_free_alt((mbedtls_md5_context*)ctx);
+}
+
+void ota_md5_init(ota_md5_context *ctx)
+{
+    mbedtls_md5_init_alt((mbedtls_md5_context*)ctx);
+}
+
+void ota_md5_starts(ota_md5_context *ctx)
+{
+    mbedtls_md5_starts_alt((mbedtls_md5_context*)ctx);
+}
+
+void ota_md5_update(ota_md5_context *ctx, const unsigned char *input, unsigned int ilen)
+{
+    mbedtls_md5_update_alt((mbedtls_md5_context*)ctx, input, ilen);
+}
+
+void ota_md5_finish(ota_md5_context *ctx, unsigned char output[16])
+{
+    mbedtls_md5_finish_alt((mbedtls_md5_context*)ctx, output);
+}
+/*RSA*/
+extern int ali_rsa_get_pubkey_size(unsigned int keybits, unsigned int *size);
+extern int ali_rsa_init_pubkey(unsigned int keybits, const unsigned char *n, unsigned int n_size,
+                      const unsigned char *e, unsigned int e_size, ota_rsa_pubkey_t *pubkey);
+extern int ali_rsa_verify(const ota_rsa_pubkey_t *pub_key, const unsigned char *dig, unsigned int dig_size,
+                      const unsigned char *sig, unsigned int sig_size, ota_rsa_padding_t padding, bool *p_result);
+
+int ota_rsa_get_pubkey_size(unsigned int keybits, unsigned int *size)
+{
+    return ali_rsa_get_pubkey_size(keybits, size);
+}
+
+int ota_rsa_init_pubkey(unsigned int keybits, const unsigned char *n, unsigned int n_size,
+                      const unsigned char *e, unsigned int e_size, ota_rsa_pubkey_t *pubkey){
+    return ali_rsa_init_pubkey(keybits, n, n_size, e, e_size, pubkey);
+}
+
+int ota_rsa_verify(const ota_rsa_pubkey_t *pub_key, const unsigned char *dig, unsigned int dig_size,
+                      const unsigned char *sig, unsigned int sig_size, ota_rsa_padding_t padding, bool *p_result)
+{
+    return ali_rsa_verify(pub_key,dig,dig_size,sig,sig_size,padding,p_result);
+}
+#endif
+
+/*base64*/
+int ota_base64_decode(const unsigned char *src, int slen, unsigned char *dst, int *dlen)
+{
+    unsigned int len = 0;
+    if(mbedtls_base64_decode(dst, *dlen, (unsigned int*)&len, src, (unsigned int)slen) != 0) {
         return -1;
     }
+    *dlen = len;
+    return 0;
+}
+/*CRC16*/
+static unsigned short update_crc16(unsigned short crcIn, unsigned char byte)
+{
+    unsigned int crc = crcIn;
+    unsigned int in = byte | 0x100;
 
-    pthread_mutex_lock(&mutex_kv);
-
-    if (hal_fopen(&fp, &file_size, &block_num) != 0) {
-        goto _hal_del_error;
-    }
-
-    for (i = 0; i < block_num; i++) {
-        memset(&kv_item, 0, sizeof(kv_t));
-        cur_pos = ftell(fp);
-
-        /* read an kv item(512 bytes) from file */
-        if (fread(&kv_item, 1, ITEM_LEN, fp) != ITEM_LEN) {
-            goto _hal_del_error;
+    do {
+        crc <<= 1;
+        in <<= 1;
+        if (in & 0x100) {
+            ++crc;
         }
-
-        /* key compared */
-        if (strcmp(kv_item.key, key) == 0) {
-            /* use last kv item merge this kv item and delete the last kv item
-             */
-            OTA_LOG_I("HAL_Kv_Del@key compared:%s, cur_pos:%d\n", kv_item.key,
-                      cur_pos);
-
-            /* fp pointer to last kv item */
-            fseek(fp, -ITEM_LEN, SEEK_END);
-            /* read an kv item(512 bytes) from file */
-            if (fread(&kv_item_last, 1, ITEM_LEN, fp) != ITEM_LEN) {
-                goto _hal_del_error;
-            }
-
-            OTA_LOG_I("last item key:%s, val:%s\n", kv_item_last.key,
-                      kv_item_last.val);
-
-            /* pointer to currect kv item */
-            fseek(fp, cur_pos, SEEK_SET);
-            fwrite(&kv_item_last, 1, ITEM_LEN, fp);
-            goto _hal_del_ok;
+        if (crc & 0x10000) {
+            crc ^= 0x1021;
         }
+    } while (!(in & 0x10000));
+    return crc & 0xffffu;
+}
+
+void ota_crc16_init(ota_crc16_ctx *inCtx)
+{
+    inCtx->crc = 0;
+}
+
+
+void ota_crc16_update(ota_crc16_ctx *inCtx, const void *inSrc, size_t inLen)
+{
+    const unsigned char *src = (const unsigned char *) inSrc;
+    const unsigned char *srcEnd = src + inLen;
+    while ( src < srcEnd ) {
+        inCtx->crc = update_crc16(inCtx->crc, *src++);
     }
-    OTA_LOG_E("HAL_Kv_Del@ can not find the key:%s\n", key);
-    goto _hal_del_ok;
-
-_hal_del_error:
-    if (fp == NULL) {
-        pthread_mutex_unlock(&mutex_kv);
-        return -1;
-    }
-    OTA_LOG_E("read %s error:%s\n", KV_FILE_PATH, strerror(errno));
-    fflush(fp);
-    fclose(fp);
-    pthread_mutex_unlock(&mutex_kv);
-
-    return -1;
-_hal_del_ok:
-
-    fflush(fp);
-    fclose(fp);
-    if (truncate(KV_FILE_PATH, file_size - ITEM_LEN) != 0) {
-        OTA_LOG_E("truncate %s error:%s\n", KV_FILE_PATH, strerror(errno));
-        pthread_mutex_unlock(&mutex_kv);
-        return -1;
-    }
-    pthread_mutex_unlock(&mutex_kv);
-
-    return 0;
 }
 
-int ota_kv_erase_all(void)
+void ota_crc16_final(ota_crc16_ctx *inCtx, unsigned short *outResult )
 {
-    pthread_mutex_lock(&mutex_kv);
-
-    OTA_LOG_I("HAL_Erase_All_Kv\n");
-
-    if (truncate(KV_FILE_PATH, 0) != 0) {
-        OTA_LOG_E("truncate %s error:%s\n", KV_FILE_PATH, strerror(errno));
-        pthread_mutex_unlock(&mutex_kv);
-        return -1;
-    }
-
-    pthread_mutex_unlock(&mutex_kv);
-    return 0;
+    inCtx->crc = update_crc16(inCtx->crc, 0);
+    inCtx->crc = update_crc16(inCtx->crc, 0);
+    *outResult = inCtx->crc & 0xffffu;
 }
 
-void *ota_timer_create(const char *name, void (*func)(void *), void *user_data)
-{
-    timer_t *timer = NULL;
-    struct sigevent ent;
-    /* check parameter */
-    if (func == NULL)
-        return NULL;
-    timer = (timer_t *)malloc(sizeof(time_t));
-    /* Init */
-    memset(&ent, 0x00, sizeof(struct sigevent));
-    /* create a timer */
-    ent.sigev_notify = SIGEV_THREAD;
-    ent.sigev_notify_function = (void (*)(union sigval))func;
-    ent.sigev_value.sival_ptr = user_data;
-    if (timer_create(CLOCK_MONOTONIC, &ent, timer) != 0) {
-        OTA_LOG_E("timer_create");
-        return NULL;
-    }
-
-    return (void *)timer;
-}
-
-int ota_timer_start(void *timer, int ms)
-{
-    struct itimerspec ts;
-    /* check parameter */
-    if (timer == NULL)
-        return -1;
-    /* it_interval=0: timer run only once */
-    ts.it_interval.tv_sec = 0;
-    ts.it_interval.tv_nsec = 0;
-
-    /* it_value=0: stop timer */
-    ts.it_value.tv_sec = ms / 1000;
-    ts.it_value.tv_nsec = (ms % 1000) * 1000;
-
-    return timer_settime(*(timer_t *)timer, 0, &ts, NULL);
-}
-
-int ota_timer_stop(void *timer)
-{
-    struct itimerspec ts;
-    /* check parameter */
-    if (timer == NULL)
-        return -1;
-
-    /* it_interval=0: timer run only once */
-    ts.it_interval.tv_sec = 0;
-    ts.it_interval.tv_nsec = 0;
-
-    /* it_value=0: stop timer */
-    ts.it_value.tv_sec = 0;
-    ts.it_value.tv_nsec = 0;
-
-    return timer_settime(*(timer_t *)timer, 0, &ts, NULL);
-}
-
-int ota_timer_delete(void *timer)
-{
-    int ret = 0;
-    /* check parameter */
-    if (timer == NULL)
-        return -1;
-    ret = timer_delete(*(timer_t *)timer);
-
-    free(timer);
-
-    return ret;
-}
-#endif
-
-
-extern void *  mbedtls_ssl_connect(int socketfd, const char *ca_crt,
-                                   uint32_t ca_crt_len);
-extern int32_t mbedtls_ssl_send(void *ssl, char *buf, uint32_t len);
-extern int32_t mbedtls_ssl_recv(void *ssl, char *buf, uint32_t len);
-void *ota_ssl_connect(int socketfd, const char *ca_crt, uint32_t ca_crt_len)
-{
-#ifdef ITLS_DOWNLOAD
-    return NULL;
-#else
-    return mbedtls_ssl_connect(socketfd, ca_crt, ca_crt_len);
-#endif
-}
-
-int32_t ota_ssl_send(void *ssl, char *buf, uint32_t len)
-{
-#ifdef ITLS_DOWNLOAD
-    return 0;
-#else
-    return mbedtls_ssl_send(ssl, buf, len);
-#endif
-}
-
-int32_t ota_ssl_recv(void *ssl, char *buf, uint32_t len)
-{
-#ifdef ITLS_DOWNLOAD
-    return 0;
-#else
-    return mbedtls_ssl_recv(ssl, buf, len);
-#endif
-}
-
-int ota_HAL_GetProductKey(char product_key[PRODUCT_KEY_MAXLEN])
-{
-    return HAL_GetProductKey(product_key);
-}
-
-int ota_HAL_GetDeviceName(char device_name[DEVICE_NAME_MAXLEN])
-{
-    return HAL_GetDeviceName(device_name);
-}
-
-int ota_HAL_GetDeviceSecret(char ds[DEVICE_SECRET_MAXLEN])
-{
-    return HAL_GetDeviceSecret(ds);
-}
-
-#if (OTA_SIGNAL_CHANNEL) == 1
+/*MQTT API*/
 int ota_hal_mqtt_publish(char *topic, int qos, void *data, int len)
 {
-    return mqtt_publish(topic, qos, data, len);
-}
-
-int ota_hal_mqtt_subscribe(char *topic,
-                           void (*cb)(char *topic, int topic_len, void *payload,
-                                      int payload_len, void *ctx),
-                           void *ctx)
-{
-    return mqtt_subscribe(topic, cb, ctx);
-}
-
-int ota_hal_mqtt_deinit_instance(void)
-{
-    return mqtt_deinit_instance();
-}
-
-int ota_hal_mqtt_init_instance(char *productKey, char *deviceName,
-                               char *deviceSecret, int maxMsgSize)
-{
-    return mqtt_init_instance(productKey, deviceName, deviceSecret, maxMsgSize);
-}
-
-void *ota_hal_iot_mqtt_field(void *ctx)
-{
-    while (1) {
-        IOT_MQTT_Yield(mqtt_get_instance(), 200);
-        HAL_SleepMs(1000);
-    }
-    return NULL;
-}
-#else
-int ota_hal_mqtt_publish(char *topic, int qos, void *data, int len)
-{
+    #if (OTA_SIGNAL_CHANNEL) == 1
+    return IOT_MQTT_Publish_Simple(NULL, topic, qos, data, len);
+    #else
     return 0;
+    #endif
 }
 
-int ota_hal_mqtt_subscribe(char *topic,
-                           void (*cb)(char *topic, int topic_len, void *payload,
-                                      int payload_len, void *ctx),
-                           void *ctx)
+int ota_hal_mqtt_subscribe(char *topic, void *cb, void *ctx)
 {
+    #if (OTA_SIGNAL_CHANNEL) == 1
+    return IOT_MQTT_Subscribe_Sync(NULL, topic, 0, cb, ctx, 1000);
+    #else
     return 0;
+    #endif
 }
 
-int ota_hal_mqtt_deinit_instance(void)
+int ota_hal_mqtt_deinit(void)
 {
+    #if (OTA_SIGNAL_CHANNEL) == 1
+    return IOT_MQTT_Destroy(NULL);
+    #else
     return 0;
+    #endif
 }
 
-int ota_hal_mqtt_init_instance(char *productKey, char *deviceName,
-                               char *deviceSecret, int maxMsgSize)
+int ota_hal_mqtt_init(void)
 {
+    #if (OTA_SIGNAL_CHANNEL) == 1
+    return (IOT_MQTT_Construct(NULL) == NULL)? -1 : 0;
+    #else
     return 0;
+    #endif
 }
 
-void *ota_hal_iot_mqtt_field(void *ctx)
+/*CoAP API*/
+int ota_coap_send(void *p_context, char *p_path, void *p_message)
 {
-    return NULL;
-}
-#endif
-const char *ota_iotx_ca_get(void)
-{
-    return iotx_ca_get();
-}
-#if (OTA_SIGNAL_CHANNEL) == 2
-int ota_IOT_CoAP_SendMessage(void *p_context, char *p_path, void *p_message)
-{
+    #if (OTA_SIGNAL_CHANNEL) == 2
     return IOT_CoAP_SendMessage(p_context, p_path, p_message);
+    #else
+    return 0;
+    #endif
 }
-int ota_IOT_CoAP_SendMessage_block(void *p_context, char *p_path,
-                                   void *p_message, unsigned int block_type,
-                                   unsigned int num, unsigned int more,
-                                   unsigned int size)
+
+int ota_coap_parse_block(void *p_message, int type, int *num, int *more, int *size)
 {
-    return IOT_CoAP_SendMessage_block(p_context, p_path, p_message, block_type,
-                                      num, more, size);
-}
-int ota_IOT_CoAP_ParseOption_block(void *p_message, int type, unsigned int *num,
-                                   unsigned int *more, unsigned int *size)
-{
+    #if (OTA_SIGNAL_CHANNEL) == 2
     return IOT_CoAP_ParseOption_block(p_message, type, num, more, size);
+    #else
+    return 0;
+    #endif
 }
-int ota_IOT_CoAP_GetMessagePayload(void *p_message, unsigned char **pp_payload,
-                                   int *p_len)
+
+int ota_coap_send_block(void *p_context, char *p_path, void *p_message, int block_type, int num, int more, int size)
 {
+    #if (OTA_SIGNAL_CHANNEL) == 2
+    return IOT_CoAP_SendMessage_block(p_context, p_path, p_message, block_type,num, more, size);
+    #else
+    return 0;
+    #endif
+}
+int ota_coap_get_payload(void *p_message, const char **pp_payload, int *p_len)
+{
+    #if (OTA_SIGNAL_CHANNEL) == 2
     return IOT_CoAP_GetMessagePayload(p_message, pp_payload, p_len);
+    #else
+    return 0;
+    #endif
 }
-int ota_IOT_CoAP_GetMessageCode(void *p_message, void *p_resp_code)
+int ota_coap_get_code(void *p_message, void *p_resp_code)
 {
+    #if (OTA_SIGNAL_CHANNEL) == 2
     return IOT_CoAP_GetMessageCode(p_message, p_resp_code);
+    #else
+    return 0;
+    #endif
 }
-void *ota_IOT_CoAP_Init(void *p_config)
+int ota_coap_init(void)
 {
-    return (void *)IOT_CoAP_Init(p_config);
+    #if (OTA_SIGNAL_CHANNEL) == 2
+    #define COAP_ONLINE_DTLS_SERVER_URL "coaps://%s.iot-as-coap.cn-shanghai.aliyuncs.com:5684"
+    int ret = 0;
+    iotx_coap_config_t   config;
+    iotx_device_info_t   dev;
+    memset(&config, 0, sizeof(config));
+    memset(&dev, 0, sizeof(dev));
+    strncpy(dev.device_id, get_ota_service()->ps, sizeof(dev.device_id)-1);
+    strncpy(dev.product_key, get_ota_service()->pk, sizeof(dev.product_key)-1);
+    strncpy(dev.device_name, get_ota_service()->dn, sizeof(dev.device_name)-1);
+    strncpy(dev.device_secret, get_ota_service()->ds, sizeof(dev.device_secret)-1);
+    config.p_devinfo = &dev;
+    char url[256] = { 0 };
+    ota_snprintf(url, sizeof(url), COAP_ONLINE_DTLS_SERVER_URL,get_ota_service()->pk);
+    config.p_url = url;
+    get_ota_service()->h_ch = (void *)ota_IOT_CoAP_Init(&config);
+    if (get_ota_service()->h_ch) {
+        ret = ota_IOT_CoAP_DeviceNameAuth(get_ota_service()->h_ch);
+        if (ret < 0) {
+            OTA_LOG_E("COAP error");
+            return ret;
+        }
+    }
+    #else
+    return 0;
+    #endif
 }
-int ota_IOT_CoAP_DeviceNameAuth(void *p_context)
+int ota_coap_deinit(void)
 {
-    return IOT_CoAP_DeviceNameAuth(p_context);
-}
-int ota_IOT_CoAP_Deinit(void **pp_context)
-{
-    IOT_CoAP_Deinit(pp_context);
+    #if (OTA_SIGNAL_CHANNEL) == 2
+    IOT_CoAP_Deinit(get_ota_service()->h_ch);
+    #endif
     return 0;
 }
-#else
-int ota_IOT_CoAP_SendMessage(void *p_context, char *p_path, void *p_message)
-{
-    return 0;
-}
-int ota_IOT_CoAP_SendMessage_block(void *p_context, char *p_path,
-                                   void *p_message, unsigned int block_type,
-                                   unsigned int num, unsigned int more,
-                                   unsigned int size)
-{
-    return 0;
-}
-int ota_IOT_CoAP_ParseOption_block(void *p_message, int type, unsigned int *num,
-                                   unsigned int *more, unsigned int *size)
-{
-    return 0;
-}
-int ota_IOT_CoAP_GetMessagePayload(void *p_message, unsigned char **pp_payload,
-                                   int *p_len)
-{
-    return 0;
-}
-int ota_IOT_CoAP_GetMessageCode(void *p_message, void *p_resp_code)
-{
-    return 0;
-}
-void *ota_IOT_CoAP_Init(void *p_config)
-{
-    return NULL;
-}
-int ota_IOT_CoAP_DeviceNameAuth(void *p_context)
-{
-    return 0;
-}
-int ota_IOT_CoAP_Deinit(void **pp_context)
-{
-    return 0;
-}
-#endif

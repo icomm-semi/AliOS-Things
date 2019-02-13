@@ -1,24 +1,3 @@
-/******************************************************************************
- *
- * Copyright(c) 2007 - 2012 Realtek Corporation. All rights reserved.
- *                                        
- * This program is free software; you can redistribute it and/or modify it
- * under the terms of version 2 of the GNU General Public License as
- * published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
- * more details.
- *
- * You should have received a copy of the GNU General Public License along with
- * this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110, USA
- *
- *
- ******************************************************************************/
-
-
 #define _OSDEP_API_C_
 
 #include <osdep_api.h>
@@ -33,26 +12,26 @@ u8* RtlMalloc(IN  u32 sz)
 
 	pbuf = rtw_malloc((u32)sz);
 
-	return pbuf;		
+	return pbuf;
 }
 
 
 u8* RtlZmalloc(IN  u32 sz)
 {
     u8  *pbuf;
- 
+
     pbuf= rtw_malloc((u32)sz);
 
     if (pbuf != NULL) {
         _memset(pbuf, 0, sz);
     }
 
-    return pbuf;    
+    return pbuf;
 }
 
 VOID RtlMfree(IN  u8 *pbuf, IN  u32 sz)
 {
-    rtw_mfree(pbuf, sz);	
+    rtw_mfree(pbuf, sz);
 }
 
 VOID* RtlMalloc2d(IN  u32 h, IN  u32 w, IN  u32 size)
@@ -148,7 +127,7 @@ u32	 RtlGetCurrentTime(VOID)
     return rtw_get_current_time();
 }
 
-VOID RtlSleepSchedulable(IN  u32 ms) 
+VOID RtlSleepSchedulable(IN  u32 ms)
 {
 }
 
@@ -164,7 +143,7 @@ VOID RtlUsleepOS(IN  u32 us)
 
 VOID RtlMdelayOS(IN   u32 ms)
 {
-   	rtw_mdelay_os(ms); 
+   	rtw_mdelay_os(ms);
 }
 
 VOID RtlUdelayOS(IN  u32 us)
@@ -181,13 +160,13 @@ VOID RtlYieldOS(VOID)
 #if defined(__ICCARM__)
 u64 RtlModular64(IN  u64 n, IN  u64 base)
 {
-	unsigned int __base = (base);	
-	unsigned int __rem;	
+	unsigned int __base = (base);
+	unsigned int __rem;
 	//(void)(((typeof((n)) *)0) == ((__uint64_t *)0));
-	if (((n) >> 32) == 0) {	
+	if (((n) >> 32) == 0) {
 		__rem = (unsigned int)(n) % __base;
 		(n) = (unsigned int)(n) / __base;
-	} else 					
+	} else
 		__rem = __Div64_32(&(n), __base);
 	return __rem;
 
@@ -201,7 +180,7 @@ u64 RtlModular64(IN  u64 x, IN  u64 y)
 
 /******************************************************************************
  * Function: RtlTimerCallbckEntry
- * Desc: This function is a timer callback wrapper. All OS timer callback 
+ * Desc: This function is a timer callback wrapper. All OS timer callback
  *      will call this function and then call the real callback function inside
  *      this function.
  *
@@ -220,7 +199,7 @@ void RtlTimerCallbckEntry (IN _timerHandle pxTimer)
         MSG_TIMER_ERR("RtlTimerCallbckEntry: NULL Timer Handle Err!\n");
         return;
     }
-    
+
     pTimer = (PRTL_TIMER) rtw_timerGetID( pxTimer );
     pTimer->CallBackFunc(pTimer->Context);
 }
@@ -234,10 +213,10 @@ void RtlTimerCallbckEntry (IN _timerHandle pxTimer)
  * 	 pTimerName: A string for the timer name.
  * 	 TimerPeriodMS: The timer period, the unit is milli-second.
  *   CallbckFunc: The callback function of this timer.
- *   pContext: A pointer will be used as the parameter to call the timer 
+ *   pContext: A pointer will be used as the parameter to call the timer
  *              callback function.
  *   isPeriodical: Is this timer periodical ? (Auto reload after expired)
- * Return: The created timer handle, a pointer. It can be used to delete the 
+ * Return: The created timer handle, a pointer. It can be used to delete the
  *          timer. If timer createion failed, return NULL.
  *
  ******************************************************************************/
@@ -265,7 +244,7 @@ PRTL_TIMER RtlTimerCreate(
         timer_ticks = TimerPeriodMS/portTICK_RATE_MS;
     }
 
-    pTimer->TimerHandle = rtw_timerCreate ((const char*)(pTimer->TimerName), timer_ticks, 
+    pTimer->TimerHandle = rtw_timerCreate ((const char*)(pTimer->TimerName), timer_ticks,
             (portBASE_TYPE)isPeriodical, (void *) pTimer, RtlTimerCallbckEntry);
 
 #ifdef PLATFORM_FREERTOS    // if any RTOS is used
@@ -278,7 +257,7 @@ PRTL_TIMER RtlTimerCreate(
         if (NULL != pTimerName) {
             for(i = 0; i < sizeof(pTimer->TimerName); i++)
             {
-                pTimer->TimerName[i] = pTimerName[i]; 
+                pTimer->TimerName[i] = pTimerName[i];
                 if(pTimerName[i] == '\0')
                 {
                     break;
@@ -291,7 +270,7 @@ PRTL_TIMER RtlTimerCreate(
         MSG_TIMER_INFO("RtlTimerCreate: SW Timer Created: Name=%s Period=%d isPeriodical=%d\n", \
             pTimer->TimerName, pTimer->msPeriod, pTimer->isPeriodical);
     }
-    else 
+    else
 #endif
     {
         RtlMfree((u8 *)pTimer, sizeof(RTL_TIMER));
@@ -299,7 +278,7 @@ PRTL_TIMER RtlTimerCreate(
         MSG_TIMER_ERR("RtlTimerCreate: OS Create Timer Failed!\n");
     }
 
-    return (pTimer);    
+    return (pTimer);
 }
 
 /******************************************************************************
@@ -325,13 +304,13 @@ VOID RtlTimerDelete(IN PRTL_TIMER pTimerHdl)
 
     MSG_TIMER_INFO("RtlTimerDelete: Name=%s\n", pTimerHdl->TimerName);
 #ifdef PLATFORM_FREERTOS
-    /* try to delete the soft timer and wait max RTL_TIMER_API_MAX_BLOCK_TICKS 
+    /* try to delete the soft timer and wait max RTL_TIMER_API_MAX_BLOCK_TICKS
         to send the delete command to the timer command queue */
 	ret = rtw_timerDelete(pTimerHdl->TimerHandle, RTL_TIMER_API_MAX_BLOCK_TICKS);
     if (pdPASS != ret) {
         MSG_TIMER_ERR("RtlTimerDelete: Delete OS Timer Failed!\n");
     }
-#endif    
+#endif
     RtlMfree((u8 *)pTimerHdl, sizeof(RTL_TIMER));
 
 }
@@ -427,7 +406,7 @@ u8 RtlTimerStop(IN PRTL_TIMER pTimerHdl, IN u8 isFromISR)
 /******************************************************************************
  * Function: RtlTimerReset
  * Desc: To reset a timer. A reset will get a re-start and reset
- *          the timer ticks counting. A running timer expired time is relative 
+ *          the timer ticks counting. A running timer expired time is relative
  *          to the time when Reset function be called. Please ensure the timer
  *          is in active state (Started). A stopped timer also will be started
  *          when this function is called.
@@ -528,7 +507,7 @@ u8 RtlTimerChangePeriod(
         MSG_TIMER_INFO("RtlTimerChangePeriod: SW Timer %s change period to %d\n", pTimerHdl->TimerName, pTimerHdl->msPeriod);
     }
 
-    
+
     return ret;
 #endif
 }

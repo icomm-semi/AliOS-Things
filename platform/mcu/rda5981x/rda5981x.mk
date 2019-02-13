@@ -30,7 +30,6 @@ GLOBAL_INCLUDES += include \
                    wifi/inc/wpa	\
                    feature/sysdata
 
-
 GLOBAL_CFLAGS += -DRDA5981x
 
 GLOBAL_CFLAGS += -mcpu=cortex-m4 \
@@ -70,7 +69,6 @@ $(NAME)_SOURCES := startup/soc_init.c \
                    hal/flash.c \
                    hal/rda_trng_api.c \
                    hal/wifi_port.c \
-                   hal/ota_port.c \
                    hal/hal_pwm.c \
                    hal/trng_api.c
 

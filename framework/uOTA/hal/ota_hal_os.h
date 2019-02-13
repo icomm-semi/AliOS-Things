@@ -4,100 +4,170 @@
 
 #ifndef OTA_PLATFORM_OS_H_
 #define OTA_PLATFORM_OS_H_
-#include <stdint.h>
 #include "ota_service.h"
-#include "iot_import.h"
 
-
-#ifdef _IS_LINKKIT_
-#define ota_snprintf HAL_Snprintf
-#define ota_malloc HAL_Malloc
-#define ota_free   HAL_Free
-#else
+#define OTA_SSL_TIMEOUT 5000
 #define ota_snprintf snprintf
+
+#ifndef false
+#define false 0
 #endif
 
-void *ota_malloc(uint32_t size);
+#ifndef true
+#define true 1
+#endif
 
-void *ota_zalloc(uint32_t size);
+#ifndef bool
+#define bool char
+#endif
 
-void *ota_realloc(void *ptr, uint32_t size);
+#ifndef NULL
+#define NULL 0
+#endif
 
+
+#define OTA_IMAGE_MD5_LEN          (16)
+#define OTA_IMAGE_RESERVER_SIZE    (2)
+
+typedef struct
+{
+    unsigned int   image_magic;
+    unsigned int   image_size;
+    unsigned char  image_md5_value[OTA_IMAGE_MD5_LEN];
+    unsigned char  image_reserver[OTA_IMAGE_RESERVER_SIZE];
+    unsigned short image_crc16;
+} ota_image_t;
+
+/*memory*/
+void *ota_malloc(int size);
+void *ota_realloc(void *ptr, int size);
+void *ota_calloc(int n, int size);
 void ota_free(void *ptr);
 
-void *ota_mutex_init(void);
-
-int ota_mutex_lock(void *mutex);
-
-int ota_mutex_unlock(void *mutex);
-
-void ota_mutex_destroy(void *mutex);
-
-void *ota_semaphore_init(void);
-
-int ota_semaphore_wait(void *sem, int32_t timeout_ms);
-
+/*Semaphore*/
+void *ota_semaphore_create(void);
+int ota_semaphore_wait(void *sem, int ms);
 void ota_semaphore_post(void *sem);
-
 void ota_semaphore_destroy(void *sem);
 
-uint32_t ota_now_ms(void);
-
-void ota_msleep(uint32_t ms);
-
+/*Thread*/
 int ota_thread_create(
     void **thread_handle,
     void *(*work_routine)(void *),
     void *arg,
-    void* param,
-    int *stack_used);
-
+    void *param,
+    int  stack_size);
 void ota_thread_exit(void *thread);
+void ota_msleep(int ms);
 
-void *ota_timer_create(const char *name, void (*func)(void *), void *user_data);
+/*KV store*/
+int ota_kv_set(const char *key, const void *val, int len, int sync);
+int ota_kv_get(const char *key, void *buffer, int *len);
 
-int ota_timer_start(void *t, int ms);
-
+/*Reboot*/
 void ota_reboot(void);
 
-int ota_kv_set(const char *key, const void *val, int len, int sync);
+/*Socket API*/
+void* ota_socket_connect(char *host, int port);
+int ota_socket_send(void* fd,  char *buf, int len);
+int ota_socket_recv(void* fd,  char *buf, int len);
+void ota_socket_close(void* fd);
 
-int ota_kv_get(const char *key, void *buffer, int *buffer_len);
+/*SSL*/
+void* ota_ssl_connect(const char *host, unsigned short port, const char *ca, int len);
+int ota_ssl_send(void* ssl,  char *buf, int len);
+int ota_ssl_recv(void* ssl,  char *buf, int len);
 
-int ota_kv_del(const char *key);
+/*Verify API*/
+typedef struct
+{
+    unsigned int total[2];
+    unsigned int state[4];
+    unsigned char buffer[64];
+}ota_md5_context;
+typedef struct {
+    unsigned int total[2];
+    unsigned int state[8];
+    unsigned char buffer[64];
+    int is224;
+}ota_sha256_context;
+/*SHA256*/
+void ota_sha256_free(ota_sha256_context *ctx);
+void ota_sha256_init(ota_sha256_context *ctx);
+void ota_sha256_starts(ota_sha256_context *ctx, int is224);
+void ota_sha256_update(ota_sha256_context *ctx, const unsigned char *input, unsigned int ilen);
+void ota_sha256_finish(ota_sha256_context *ctx, unsigned char output[32]);
+/*MD5*/
+void ota_md5_free(ota_md5_context *ctx);
+void ota_md5_init(ota_md5_context *ctx);
+void ota_md5_starts(ota_md5_context *ctx);
+void ota_md5_update(ota_md5_context *ctx, const unsigned char *input, unsigned int ilen);
+void ota_md5_finish(ota_md5_context *ctx, unsigned char output[16]);
+/*CRC16*/
+typedef struct {
+    unsigned short crc;
+} ota_crc16_ctx;
+void ota_crc16_init(ota_crc16_ctx *ctx);
+void ota_crc16_update(ota_crc16_ctx *ctx, const void *inSrc, unsigned int inLen);
+void ota_crc16_final(ota_crc16_ctx *ctx, unsigned short *outResult);
+/*Base64*/
+int ota_base64_decode(const unsigned char *input, int input_len, unsigned char *output, int *output_len);
+/*RSA*/
+#define HASH_NONE OTA_HASH_NONE
+#define SHA256 OTA_SHA256
+#define MD5 OTA_MD5
+#define RSASSA_PKCS1_V1_5 OTA_RSASSA_PKCS1_V1_5
+typedef enum {
+    HASH_NONE   = 0,
+    SHA256      = 3,
+    MD5         = 6,
+} OTA_HASH_E;
+typedef enum {
+    RSASSA_PKCS1_V1_5       = 20,
+} ota_rsa_pad_type_t;
 
-int ota_kv_erase_all(void);
+typedef struct{
+    ota_rsa_pad_type_t type;
+    union {
+        struct {
+            OTA_HASH_E type;
+        } rsaes_oaep;
+        struct {
+            OTA_HASH_E type;
+        } rsassa_v1_5;
+        struct {
+            OTA_HASH_E type;
+            unsigned int salt_len;
+        } rsassa_pss;
+    } pad;
+} ota_rsa_padding_t;
 
-int ota_version_report(void);
+#define TEE_MIN_RSA_KEY_SIZE      (256)
+#define TEE_MAX_RSA_KEY_SIZE      (2048)
 
-int ota_HAL_GetProductKey(char pk[PRODUCT_KEY_MAXLEN]);
-
-int ota_HAL_GetDeviceName(char dn[DEVICE_NAME_MAXLEN]);
-
-int ota_HAL_GetDeviceSecret(char ds[DEVICE_SECRET_MAXLEN]);
-
-void* ota_ssl_connect(int socketfd, const char *ca_crt, uint32_t ca_crt_len);
-
-int32_t ota_ssl_send(void* ssl,  char *buf, uint32_t len);
-
-int32_t ota_ssl_recv(void* ssl,  char *buf, uint32_t len);
-
-const char *ota_iotx_ca_get(void);
-/*MQTT & COAP HAL*/
+typedef struct{
+    unsigned int magic;
+    unsigned int n_size;
+    unsigned int e_size;
+    unsigned char n[(TEE_MAX_RSA_KEY_SIZE >> 3)];
+    unsigned char e[(TEE_MAX_RSA_KEY_SIZE >> 3)];
+} ota_rsa_pubkey_t;
+int ota_rsa_get_pubkey_size(unsigned int keybits, unsigned int *size);
+int ota_rsa_init_pubkey(unsigned int keybits, const unsigned char *n, unsigned int n_size,
+                      const unsigned char *e, unsigned int e_size, ota_rsa_pubkey_t *pubkey);
+/*MQTT*/
 int ota_hal_mqtt_publish(char *topic, int qos, void *data, int len);
-int ota_hal_mqtt_subscribe(char *topic, void (*cb)(char *topic, int topic_len, void *payload, int payload_len, void *ctx), void *ctx);
-int ota_hal_mqtt_deinit_instance(void);
-int ota_hal_mqtt_init_instance(char *productKey, char *deviceName, char *deviceSecret, int maxMsgSize);
-void* ota_hal_iot_mqtt_field(void* ctx);
+int ota_hal_mqtt_subscribe(char *topic, void* cb, void *ctx);
+int ota_hal_mqtt_deinit(void);
+int ota_hal_mqtt_init(void);
 
-int ota_IOT_CoAP_SendMessage(void *p_context,   char *p_path, void *p_message);
-int ota_IOT_CoAP_SendMessage_block(void *p_context, char *p_path, void *p_message,
-                               unsigned int block_type, unsigned int num, unsigned int more, unsigned int size);
-int ota_IOT_CoAP_ParseOption_block(void *p_message, int type, unsigned int *num,
-                                unsigned int *more, unsigned int *size);
-int ota_IOT_CoAP_GetMessagePayload(void *p_message, unsigned char **pp_payload, int *p_len);
-int ota_IOT_CoAP_GetMessageCode(void *p_message, void *p_resp_code);
-void *ota_IOT_CoAP_Init(void *p_config);
-int ota_IOT_CoAP_DeviceNameAuth(void *p_context);
-int ota_IOT_CoAP_Deinit(void **pp_context);
+/*COAP*/
+int ota_coap_send(void *p_context, char *p_path, void *p_message);
+int ota_coap_send_block(void *p_context, char *p_path, void *p_message,
+                                  int block_type, int num, int more, int size);
+int ota_coap_parse_block(void *p_message, int type, int *num,int *more, int *size);
+int ota_coap_get_payload(void *p_message, const char **pp_payload, int *p_len);
+int ota_coap_get_code(void *p_message, void *p_resp_code);
+int ota_coap_init(void);
+int ota_coap_deinit(void);
 #endif

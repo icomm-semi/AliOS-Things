@@ -22,6 +22,7 @@ void hal_init()
     board_init();
 }
 
+extern void board_init_later() __attribute__((weak));
 static void sys_init(void)
 {
     LOG("sys_init.");
@@ -40,9 +41,7 @@ static void sys_init(void)
     aos_loop_init();
     aos_framework_init();
     dumpsys_cli_init();
-#ifdef AOS_FOTA
-    ota_service_init();
-#endif
+    board_init_later();
     application_start(0, NULL);
 #endif
 }

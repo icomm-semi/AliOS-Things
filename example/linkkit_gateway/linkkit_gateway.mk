@@ -6,12 +6,17 @@ $(NAME)_COMPONENTS += framework/protocol/linkkit/sdk \
                       framework/protocol/linkkit/hal \
                       framework/netmgr \
                       framework/common \
-                      framework/ywss4linkkit \
-                      framework/uOTA \
                       utility/cjson \
+                      framework/uOTA
 
 GLOBAL_CFLAGS += -DCONFIG_DM_DEVTYPE_GATEWAY  \
-                 -DMQTT_DIRECT                   
+                 -DWIFI_PROVISION_ENABLED \
+                 -DCONFIG_YWSS \
+                 -DAWSS_SUPPORT_DEV_AP \
+                 -DAWSS_SUPPORT_STATIS  \
+                 -DMQTT_DIRECT \
+                 -DOTA_ENABLED \
+                 -DBUILD_AOS      
 
 ifeq ($(LWIP),1)
 $(NAME)_COMPONENTS  += protocols.net
@@ -30,8 +35,3 @@ else
 GLOBAL_DEFINES += FOTA_RAM_LIMIT_MODE
 GLOBAL_DEFINES += ESP8266_CHIPSET
 endif
-
-#for test command
-GLOBAL_CFLAGS += -DLINKKIT_GATEWAY_TEST_CMD
-$(NAME)_SOURCES += testcmd.c testcmd_lock.c json.c
-#end

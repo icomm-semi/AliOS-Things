@@ -1,7 +1,6 @@
 /*
- * Copyright (C) 2015-2017 Alibaba Group Holding Limited
+ * Copyright (C) 2015-2018 Alibaba Group Holding Limited
  */
-
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -12,24 +11,28 @@
 #include <aos/yloop.h>
 #include "netmgr.h"
 #include "iot_export.h"
+#include "iot_import.h"
 
-#ifdef AOS_ATCMD
-#include <atparser.h>
-#endif
+
 #ifdef CSP_LINUXHOST
 #include <signal.h>
 #endif
 
 #include <k_api.h>
 
-#ifdef LINKKIT_GATEWAY_TEST_CMD
-#include "testcmd.h"
+#if defined(OTA_ENABLED) && defined(BUILD_AOS)
+#include "ota_service.h"
 #endif
 
 static char linkkit_started = 0;
-static char awss_running    = 0;
 
-void linkkit_main(void *p);
+#ifdef EN_COMBO_NET
+char awss_running = 0;
+extern int combo_net_init(void);
+#else
+static char awss_running    = 0;
+#endif
+extern int linkkit_main(void *paras);
 void set_iotx_info();
 void do_awss_active();
 
@@ -37,7 +40,7 @@ void do_awss_active();
 void print_heap()
 {
     extern k_mm_head *g_kmm_head;
-    int    free = g_kmm_head->free_size;
+    int               free = g_kmm_head->free_size;
     LOG("============free heap size =%d==========", free);
 }
 #endif
@@ -61,19 +64,24 @@ static void wifi_service_event(input_event_t *event, void *priv_data)
         return;
     }
 
+ #ifdef EN_COMBO_NET
+    if (awss_running) {
+        awss_success_notify();
+    }
+#endif
+
     if (!linkkit_started) {
 #ifdef CONFIG_PRINT_HEAP
         print_heap();
 #endif
 #ifdef MQTT_DIRECT
-        aos_task_new("linkkit", linkkit_main, NULL, 1024 * 6);
+        aos_task_new("linkkit", (void (*)(void *))linkkit_main, NULL, 1024 * 6);
 #else
-        aos_task_new("linkkit", linkkit_main, NULL, 1024 * 8);
+        aos_task_new("linkkit", (void (*)(void *))linkkit_main, NULL, 1024 * 8);
 #endif
         linkkit_started = 1;
     }
 }
-
 
 static void cloud_service_event(input_event_t *event, void *priv_data)
 {
@@ -103,12 +111,11 @@ static void cloud_service_event(input_event_t *event, void *priv_data)
 static void linkkit_event_monitor(int event)
 {
     switch (event) {
-        case IOTX_AWSS_START: // AWSS start without enbale, just supports device
-                              // discover
+        case IOTX_AWSS_START: // AWSS start without enbale, just supports device discover
             // operate led to indicate user
             LOG("IOTX_AWSS_START");
             break;
-        case IOTX_AWSS_ENABLE: // AWSS enable
+        case IOTX_AWSS_ENABLE: // AWSS enable, AWSS doesn't parse awss packet until AWSS is enabled.
             LOG("IOTX_AWSS_ENABLE");
             // operate led to indicate user
             break;
@@ -170,6 +177,11 @@ static void linkkit_event_monitor(int event)
             LOG("IOTX_AWSS_BIND_NOTIFY");
             // operate led to indicate user
             break;
+        case IOTX_AWSS_ENABLE_TIMEOUT: // AWSS enable timeout
+                                       // user needs to enable awss again to support get ssid & passwd of router
+            LOG("IOTX_AWSS_ENALBE_TIMEOUT");
+            // operate led to indicate user
+            break;
         case IOTX_CONN_CLOUD: // Device try to connect cloud
             LOG("IOTX_CONN_CLOUD");
             // operate led to indicate user
@@ -193,6 +205,30 @@ static void linkkit_event_monitor(int event)
     }
 }
 
+
+static void awss_close_dev_ap(void *p)
+{
+    awss_dev_ap_stop();
+    LOG("%s exit\n", __func__);
+    aos_task_exit(0);
+}
+
+void awss_open_dev_ap(void *p)
+{
+    iotx_event_regist_cb(linkkit_event_monitor);
+    LOG("%s\n", __func__);
+    if (netmgr_start(false) != 0) {
+        aos_msleep(2000);
+        awss_dev_ap_start();
+    }
+    aos_task_exit(0);
+}
+static void stop_netmgr(void *p)
+{
+    awss_stop();
+    LOG("%s\n", __func__);
+    aos_task_exit(0);
+}
 static void start_netmgr(void *p)
 {
     iotx_event_regist_cb(linkkit_event_monitor);
@@ -204,22 +240,44 @@ void do_awss_active()
 {
     LOG("do_awss_active %d\n", awss_running);
     awss_running = 1;
+    #ifdef WIFI_PROVISION_ENABLED
     extern int awss_config_press();
     awss_config_press();
+    #endif
+}
+
+void do_awss_dev_ap()
+{
+    aos_task_new("netmgr_stop", stop_netmgr, NULL, 4096);
+    aos_task_new("dap_open", awss_open_dev_ap, NULL, 4096);
+}
+
+void do_awss()
+{
+    aos_task_new("dap_close", awss_close_dev_ap, NULL, 2048);
+    aos_task_new("netmgr_start", start_netmgr, NULL, 4096);
 }
 
 static void linkkit_reset(void *p)
 {
     netmgr_clear_ap_config();
-    HAL_Sys_reboot();
+    HAL_Reboot();
 }
+
 
 extern int  awss_report_reset();
 static void do_awss_reset()
 {
+#ifdef WIFI_PROVISION_ENABLED
+#if defined(SUPPORT_ITLS)
+    aos_task_new("reset", (void (*)(void *))awss_report_reset, NULL, 4096);  // stack taken by iTLS is more than taken by TLS.
+#else
     aos_task_new("reset", (void (*)(void *))awss_report_reset, NULL, 2048);
+#endif
+#endif
     aos_post_delayed_action(2000, linkkit_reset, NULL);
 }
+
 
 void linkkit_key_process(input_event_t *eventinfo, void *priv_data)
 {
@@ -230,57 +288,15 @@ void linkkit_key_process(input_event_t *eventinfo, void *priv_data)
 
     if (eventinfo->code == CODE_BOOT) {
         if (eventinfo->value == VALUE_KEY_CLICK) {
+
             do_awss_active();
         } else if (eventinfo->value == VALUE_KEY_LTCLICK) {
             do_awss_reset();
         }
     }
 }
+
 #ifdef CONFIG_AOS_CLI
-static void handle_gw_mm_cmd(char *pwbuf, int blen, int argc, char **argv)
-{
-    int loglevel_bakups =  LITE_get_loglevel();
-    LITE_set_loglevel(LOG_DEBUG_LEVEL);
-    LITE_dump_malloc_free_stats(LOG_DEBUG_LEVEL);
-    LITE_set_loglevel(loglevel_bakups);
-
-}
-static struct cli_command gw_mm = {
-    .name = "gw_mm",
-    .help = "gw_mm",
-    .function = handle_gw_mm_cmd
-};
-static void handle_gw_start_cmd(char *pwbuf, int blen, int argc, char **argv)
-{
-    if (argc != 5) {
-		printf("Warning:Invalid gateway Info argc=%d!\n\r",argc);
-        return;
-    }
-    if (NULL == argv[1] || NULL == argv[2] || NULL == argv[3] || NULL == argv[4]
-		||strlen(argv[1])<=0 || strlen(argv[2])<=0 || strlen(argv[3])<=0 || strlen(argv[4]) <= 0)
-		{
-            printf("Warning:Invalid gateway Info!\n\r");
-            return;
-		}
-	printf("******set gateway tuple*********************\n\r");
-	printf("******PK:%s\n\r",argv[1]);		
-	printf("******DN:%s\n\r",argv[2]);	
-	printf("******DS:%s\n\r",argv[3]);
-    printf("******PS:%s\n\r",argv[4]);
-	HAL_SetProductKey(argv[1]);
-	HAL_SetDeviceName(argv[2]);
-	HAL_SetDeviceSecret(argv[3]);
-    HAL_SetProductSecret(argv[4]);
-
-}
-
-static struct cli_command gw_start = {
-    .name = "gwstart",
-    .help = "gwstart [PK|PN|DS|PS]",
-    .function = handle_gw_start_cmd
-};
-
-
 static void handle_reset_cmd(char *pwbuf, int blen, int argc, char **argv)
 {
     aos_schedule_call(do_awss_reset, NULL);
@@ -291,13 +307,29 @@ static void handle_active_cmd(char *pwbuf, int blen, int argc, char **argv)
     aos_schedule_call(do_awss_active, NULL);
 }
 
+static void handle_dev_ap_cmd(char *pwbuf, int blen, int argc, char **argv)
+{
+    aos_schedule_call(do_awss_dev_ap, NULL);
+}
+
+static void handle_awss_cmd(char *pwbuf, int blen, int argc, char **argv)
+{
+    aos_schedule_call(do_awss, NULL);
+}
+
 static struct cli_command resetcmd = { .name     = "reset",
                                        .help     = "factory reset",
                                        .function = handle_reset_cmd };
 
-static struct cli_command ncmd = { .name     = "active_awss",
-                                   .help     = "active_awss [start]",
-                                   .function = handle_active_cmd };
+static struct cli_command awss_enable_cmd = { .name     = "active_awss",
+                                              .help     = "active_awss [start]",
+                                              .function = handle_active_cmd };
+static struct cli_command awss_dev_ap_cmd = { .name     = "dev_ap",
+                                              .help     = "awss_dev_ap [start]",
+                                              .function = handle_dev_ap_cmd };
+static struct cli_command awss_cmd = { .name     = "awss",
+                                       .help     = "awss [start]",
+                                       .function = handle_awss_cmd };
 #endif
 
 #ifdef CONFIG_PRINT_HEAP
@@ -308,10 +340,30 @@ static void duration_work(void *p)
 }
 #endif
 
+static int mqtt_connected_event_handler(void)
+{
+    LOG("MQTT Construct  OTA start");
+#if defined(OTA_ENABLED) && defined(BUILD_AOS)
+    char product_key[PRODUCT_KEY_LEN + 1] = {0};
+    char device_name[DEVICE_NAME_LEN + 1] = {0};
+    char device_secret[DEVICE_SECRET_LEN + 1] = {0};
+    HAL_GetProductKey(product_key);
+    HAL_GetDeviceName(device_name);
+    HAL_GetDeviceSecret(device_secret);
+    static ota_service_t ctx = {0};
+    memset(&ctx, 0, sizeof(ota_service_t));
+    strncpy(ctx.pk, product_key, sizeof(ctx.pk)-1);
+    strncpy(ctx.dn, device_name, sizeof(ctx.dn)-1);
+    strncpy(ctx.ds, device_secret, sizeof(ctx.ds)-1);
+    ctx.trans_protcol = 0;
+    ctx.dl_protcol = 3;
+    ota_service_init(&ctx);
+#endif
+    return 0;
+}
+
 int application_start(int argc, char **argv)
 {
-
-
 #ifdef CONFIG_PRINT_HEAP
     print_heap();
     aos_post_delayed_action(5000, duration_work, NULL);
@@ -320,37 +372,41 @@ int application_start(int argc, char **argv)
 #ifdef CSP_LINUXHOST
     signal(SIGPIPE, SIG_IGN);
 #endif
-#if AOS_ATCMD
-    at.set_mode(ASYN);
-    at.init(AT_RECV_PREFIX, AT_RECV_SUCCESS_POSTFIX, AT_RECV_FAIL_POSTFIX,
-            AT_SEND_DELIMITER, 1000);
-#endif
 
 #ifdef WITH_SAL
     sal_init();
 #endif
 
-
+#ifdef MDAL_MAL_ICA_TEST
+    HAL_MDAL_MAL_Init();
+#endif
     aos_set_log_level(AOS_LL_DEBUG);
 
     netmgr_init();
     aos_register_event_filter(EV_KEY, linkkit_key_process, NULL);
     aos_register_event_filter(EV_WIFI, wifi_service_event, NULL);
     aos_register_event_filter(EV_YUNIO, cloud_service_event, NULL);
+    IOT_RegisterCallback(ITE_MQTT_CONNECT_SUCC,mqtt_connected_event_handler);
 
 #ifdef CONFIG_AOS_CLI
     aos_cli_register_command(&resetcmd);
-    aos_cli_register_command(&ncmd);
-    aos_cli_register_command(&gw_start);
-    aos_cli_register_command(&gw_mm);
-
-#ifdef LINKKIT_GATEWAY_TEST_CMD
-    aos_cli_register_command(&gw_test_cmd);
-#endif /* LINKKIT_GATEWAY_TEST_CMD */    
+    aos_cli_register_command(&awss_enable_cmd);
+    aos_cli_register_command(&awss_dev_ap_cmd);
+    aos_cli_register_command(&awss_cmd);
 #endif
     set_iotx_info();
-    aos_task_new("netmgr", start_netmgr, NULL, 4096);
+    extern void LITE_set_loglevel(int);
+    LITE_set_loglevel(5);
 
+#ifdef EN_COMBO_NET
+    combo_net_init();
+#else
+#ifdef AWSS_SUPPORT_DEV_AP
+     aos_task_new("dap_open", awss_open_dev_ap, NULL, 4096);
+#else
+    aos_task_new("netmgr_start", start_netmgr, NULL, 4096);
+#endif
+#endif
     aos_loop_run();
 
     return 0;

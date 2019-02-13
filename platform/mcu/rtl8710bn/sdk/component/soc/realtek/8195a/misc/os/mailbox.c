@@ -1,24 +1,3 @@
-/******************************************************************************
- *
- * Copyright(c) 2007 - 2012 Realtek Corporation. All rights reserved.
- *                                        
- * This program is free software; you can redistribute it and/or modify it
- * under the terms of version 2 of the GNU General Public License as
- * published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
- * more details.
- *
- * You should have received a copy of the GNU General Public License along with
- * this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110, USA
- *
- *
- ******************************************************************************/
-
-
 #define _MAILBOX_C_
 
 #include "mailbox.h"
@@ -33,35 +12,35 @@ PRTL_MAILBOX RtlMailboxCreate(IN u8 MboxID, IN u32 MboxSize, IN _Sema *pWakeSema
 VOID RtlMailboxDel(IN PRTL_MAILBOX MboxHdl);
 
 u8 RtlMailboxSendToBack(
-    IN u8 MboxID, 
-    IN MSG_BLK *pMsg, 
-    IN u32 MSToWait, 
+    IN u8 MboxID,
+    IN MSG_BLK *pMsg,
+    IN u32 MSToWait,
     IN u8 IsFromISR
 );
 
 u8 RtlMailboxSendToFront(
-    IN u8 MboxID, 
-    IN MSG_BLK *pMsg, 
-    IN u32 MSToWait, 
+    IN u8 MboxID,
+    IN MSG_BLK *pMsg,
+    IN u32 MSToWait,
     IN u8 IsFromISR
 );
 
 u8 RtlMailboxReceive(
-    IN u8 MboxID, 
-    OUT MSG_BLK *pMsg, 
-    IN u32 MSToWait, 
+    IN u8 MboxID,
+    OUT MSG_BLK *pMsg,
+    IN u32 MSToWait,
     IN u8 IsFromISR
 );
 
 u8 RtlMailboxPeek(
-    IN u8 MboxID, 
-    OUT MSG_BLK *pMsg, 
-    IN u32 MSToWait, 
+    IN u8 MboxID,
+    OUT MSG_BLK *pMsg,
+    IN u32 MSToWait,
     IN u8 IsFromISR
 );
 
 u32 RtlMailboxMsgWaiting(
-    IN u8 MboxID, 
+    IN u8 MboxID,
     IN u8 IsFromISR
 );
 
@@ -80,7 +59,7 @@ static RTL_MBOX_ROOT MBox_Entry;
  * Desc: Map a mailbox ID to the mailbox pointer.
  * Para:
  *	MBoxId: The Mailbox ID
- * Return: The pointer of the mailbox. If didn't found match mailbox, 
+ * Return: The pointer of the mailbox. If didn't found match mailbox,
  *			return NULL.
  *
  ******************************************************************************/
@@ -105,7 +84,7 @@ static PRTL_MAILBOX RtlMBoxIdToHdl(
 	RtlDownMutex(&MBox_Entry.Mutex);
 	pList = RtlListGetNext(&MBox_Entry.mbox_list);
 	while (pList != pHead) {
-		pTmpMbox = CONTAINER_OF(pList, RTL_MAILBOX, mbox_list);		
+		pTmpMbox = CONTAINER_OF(pList, RTL_MAILBOX, mbox_list);
 		if (MBoxId == pTmpMbox->mbox_id) {
 			pMbox = pTmpMbox;
 			break;
@@ -121,20 +100,20 @@ static PRTL_MAILBOX RtlMBoxIdToHdl(
  * Function: RtlMailboxCreate
  * Desc: To create a mailbox with a given mailbox ID and size
  * Para:
- * 	MboxID: A number to identify this created mailbox. A message block can 
- *          be send to a mailbox by a given MboxID. The MboxID must be unique 
- *          in the whole system. If this MboxID is conflict with a created 
+ * 	MboxID: A number to identify this created mailbox. A message block can
+ *          be send to a mailbox by a given MboxID. The MboxID must be unique
+ *          in the whole system. If this MboxID is conflict with a created
  *          mailbox, the mailbox creation will fail and return NULL.
- *  MboxSize: The size of this mailbox to be created. It means maximum number 
+ *  MboxSize: The size of this mailbox to be created. It means maximum number
  *          of message blocks can be stored in this mailbox.
- *  pWakeSema: The semaphore to wake up the receiving task to receive the new 
- *          message. If the receiving task doesn't need a semaphore to wakeup 
+ *  pWakeSema: The semaphore to wake up the receiving task to receive the new
+ *          message. If the receiving task doesn't need a semaphore to wakeup
  *          it, then just let this pointer is NULL.
  * Return: The created mailbox pointer. If it failed, return NULL.
  ******************************************************************************/
 PRTL_MAILBOX RtlMailboxCreate(
-    IN u8 MboxID, 
-    IN u32 MboxSize, 
+    IN u8 MboxID,
+    IN u32 MboxSize,
     IN _Sema *pWakeSema
 )
 {
@@ -147,7 +126,7 @@ PRTL_MAILBOX RtlMailboxCreate(
         MBox_Entry.isInitialed = 1;
         MSG_MBOX_INFO("MBox Entry Initial...\n");
     }
-    
+
 	// check if this mailbox ID is ocupied ?
 	pMBox = RtlMBoxIdToHdl(MboxID);
 	if (NULL != pMBox) {
@@ -168,7 +147,7 @@ PRTL_MAILBOX RtlMailboxCreate(
     pMBox->mbox_hdl = xQueueCreate(MboxSize, sizeof(MSG_BLK));
     if (NULL == pMBox->mbox_hdl) {
 		MSG_MBOX_ERR("RtlMailboxCreate: xQueueCreate Failed\n");
-        RtlMfree((void *)pMBox, sizeof(RTL_MAILBOX));        
+        RtlMfree((void *)pMBox, sizeof(RTL_MAILBOX));
         return NULL;
     }
 #endif
@@ -224,20 +203,20 @@ VOID RtlMailboxDel(
  * Para:
  *  MboxID: The identifier of the target mailbox.
  *  pMsg: The pointer of the message block to be put into the mailbox.
- *  MSToWait: If the mailbox is full, this value gives a time to wait to put 
- *            this message. The time unit is millisecond. 
- *            The special values are: 
- *               0: no waiting; 
- *               0xffffffff: wait without timeout. 
- *            If the waiting is timeout, the message sending is failed and 
+ *  MSToWait: If the mailbox is full, this value gives a time to wait to put
+ *            this message. The time unit is millisecond.
+ *            The special values are:
+ *               0: no waiting;
+ *               0xffffffff: wait without timeout.
+ *            If the waiting is timeout, the message sending is failed and
  *            return _FAIL.
  *  IsFromISR: Is this function is called from an ISR ?
  * Return: _SUCCESS or _FAIL.
  ******************************************************************************/
 u8 RtlMailboxSendToBack(
-    IN u8 MboxID, 
-    IN MSG_BLK *pMsg, 
-    IN u32 MSToWait, 
+    IN u8 MboxID,
+    IN MSG_BLK *pMsg,
+    IN u32 MSToWait,
     IN u8 IsFromISR
 )
 {
@@ -271,7 +250,7 @@ u8 RtlMailboxSendToBack(
     else {
         ret = xQueueSendToBack(pMbox->mbox_hdl, (void *)pMsg, (portTickType) wait_ticks);
     }
-    
+
     if(ret != pdPASS ) {
         // send message to the queue failed
    	    MSG_MBOX_ERR("RtlMailboxSendToBack: Put Msg to Queue Failed, MBoxID=%d\n", MboxID);
@@ -280,7 +259,7 @@ u8 RtlMailboxSendToBack(
     else {
         // try to give a semaphore to wake up the receiving task
         if (pMbox->pWakeSema) {
-            RtlUpSema(pMbox->pWakeSema);  
+            RtlUpSema(pMbox->pWakeSema);
         }
         ret = _SUCCESS;
     }
@@ -301,20 +280,20 @@ u8 RtlMailboxSendToBack(
  * Para:
  *  MboxID: The identifier of the target mailbox.
  *  pMsg: The pointer of the message block to be put into the mailbox.
- *  MSToWait: If the mailbox is full, this value gives a time to wait to put 
- *            this message. The time unit is millisecond. 
- *            The special values are: 
- *               0: no waiting; 
- *               0xffffffff: wait without timeout. 
- *            If the waiting is timeout, the message sending is failed and 
+ *  MSToWait: If the mailbox is full, this value gives a time to wait to put
+ *            this message. The time unit is millisecond.
+ *            The special values are:
+ *               0: no waiting;
+ *               0xffffffff: wait without timeout.
+ *            If the waiting is timeout, the message sending is failed and
  *            return _FAIL.
  *  IsFromISR: Is this function is called from an ISR ?
  * Return: _SUCCESS or _FAIL.
  ******************************************************************************/
 u8 RtlMailboxSendToFront(
-    IN u8 MboxID, 
-    IN MSG_BLK *pMsg, 
-    IN u32 MSToWait, 
+    IN u8 MboxID,
+    IN MSG_BLK *pMsg,
+    IN u32 MSToWait,
     IN u8 IsFromISR
 )
 {
@@ -348,7 +327,7 @@ u8 RtlMailboxSendToFront(
     else {
         ret = xQueueSendToFront(pMbox->mbox_hdl, (void *)pMsg, (portTickType) wait_ticks);
     }
-    
+
     if(ret != pdPASS ) {
         // send message to the queue failed
    	    MSG_MBOX_ERR("RtlMailboxSendToBack: Put Msg to Queue Failed, MBoxID=%d\n", MboxID);
@@ -357,7 +336,7 @@ u8 RtlMailboxSendToFront(
     else {
         // try to give a semaphore to wake up the receiving task
         if (pMbox->pWakeSema) {
-            RtlUpSema(pMbox->pWakeSema);  
+            RtlUpSema(pMbox->pWakeSema);
         }
         ret = _SUCCESS;
     }
@@ -377,20 +356,20 @@ u8 RtlMailboxSendToFront(
  * Para:
  *  MboxID: The identifier of the target mailbox.
  *  pMsg: The message block to store the gotten message.
- *  MSToWait: If the mailbox is full, this value gives a time to wait to put 
- *            this message. The time unit is millisecond. 
- *            The special values are: 
- *               0: no waiting; 
- *               0xffffffff: wait without timeout. 
- *            If the waiting is timeout, the message sending is failed and 
+ *  MSToWait: If the mailbox is full, this value gives a time to wait to put
+ *            this message. The time unit is millisecond.
+ *            The special values are:
+ *               0: no waiting;
+ *               0xffffffff: wait without timeout.
+ *            If the waiting is timeout, the message sending is failed and
  *            return _FAIL.
  *  IsFromISR: Is this function is called from an ISR ?
  * Return: _SUCCESS or _FAIL.
  ******************************************************************************/
 u8 RtlMailboxReceive(
-    IN u8 MboxID, 
-    OUT MSG_BLK *pMsg, 
-    IN u32 MSToWait, 
+    IN u8 MboxID,
+    OUT MSG_BLK *pMsg,
+    IN u32 MSToWait,
     IN u8 IsFromISR
 )
 {
@@ -425,7 +404,7 @@ u8 RtlMailboxReceive(
         ret = xQueueReceive(pMbox->mbox_hdl, (void *)pMsg, ( portTickType ) wait_ticks);
 
     }
-    
+
     if(ret != pdTRUE ) {
         // receive message failed
         if (0 != MSToWait) {
@@ -448,25 +427,25 @@ u8 RtlMailboxReceive(
 
 /******************************************************************************
  * Function: RtlMailboxPeek
- * Desc: To copy the head message from a given mailbox without move this 
+ * Desc: To copy the head message from a given mailbox without move this
  *       message block out from the mailbox.
  * Para:
  *  MboxID: The identifier of the target mailbox.
  *  pMsg: The message block to store the gotten message.
- *  MSToWait: If the mailbox is full, this value gives a time to wait to put 
- *            this message. The time unit is millisecond. 
- *            The special values are: 
- *               0: no waiting; 
- *               0xffffffff: wait without timeout. 
- *            If the waiting is timeout, the message sending is failed and 
+ *  MSToWait: If the mailbox is full, this value gives a time to wait to put
+ *            this message. The time unit is millisecond.
+ *            The special values are:
+ *               0: no waiting;
+ *               0xffffffff: wait without timeout.
+ *            If the waiting is timeout, the message sending is failed and
  *            return _FAIL.
  *  IsFromISR: Is this function is called from an ISR ?
  * Return: _SUCCESS or _FAIL.
  ******************************************************************************/
 u8 RtlMailboxPeek(
-    IN u8 MboxID, 
-    OUT MSG_BLK *pMsg, 
-    IN u32 MSToWait, 
+    IN u8 MboxID,
+    OUT MSG_BLK *pMsg,
+    IN u32 MSToWait,
     IN u8 IsFromISR
 )
 {
@@ -504,7 +483,7 @@ u8 RtlMailboxPeek(
         ret = xQueuePeek(pMbox->mbox_hdl, (void *)pMsg, ( portTickType ) wait_ticks);
 
     }
-    
+
     if(ret != pdTRUE ) {
         // receive message failed
         MSG_MBOX_ERR("RtlMailboxReceive: Receive Msg Failed, MBoxID=%d\n", MboxID);
@@ -533,7 +512,7 @@ u8 RtlMailboxPeek(
  * Return: The number of message blocks are storing in this mailbox.
  ******************************************************************************/
 u32 RtlMailboxMsgWaiting(
-    IN u8 MboxID, 
+    IN u8 MboxID,
     IN u8 IsFromISR
 )
 {
