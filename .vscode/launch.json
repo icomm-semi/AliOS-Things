@@ -1,0 +1,95 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug @ Mac/Linux",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceRoot}/out/helloworld@starterkit/binary/helloworld@starterkit.elf",
+            "args": [],
+            "stopAtEntry": true,
+            "cwd": "${workspaceRoot}",
+            "environment": [],
+            "externalConsole": true,
+            "miDebuggerServerAddress": "localhost:4242",
+            "serverLaunchTimeout": 2000,
+            "targetArchitecture": "ARM",
+            "setupCommands": [
+                {
+                    "text": "cd ${workspaceRoot}"
+                },
+                {
+                    "text": "source .gdbinit"
+                },
+                {
+                    "text": "target remote localhost:4242"
+                },
+                {
+                    "text": "file out/helloworld@starterkit/binary/helloworld@starterkit.elf"
+                },
+                {
+                    "text": "break application_start"
+                }
+            ],
+            "customLaunchSetupCommands": [],
+            "launchCompleteCommand": "exec-run",
+            "osx": {
+                "MIMode": "gdb",
+                "miDebuggerPath": "arm-none-eabi-gdb"
+            },
+            "linux": {
+                "MIMode": "gdb",
+                "miDebuggerPath": "arm-none-eabi-gdb"
+            },
+            "windows": {
+                "MIMode": "gdb",
+                "miDebuggerPath": "arm-none-eabi-gdb.exe"
+            }
+        },
+        {
+            "name": "Debug @ Windows",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "D:\\work\\AliOS-Things\\out\\helloworld@starterkit\\binary\\helloworld@starterkit.elf",
+            "args": [],
+            "stopAtEntry": true,
+            "cwd": "${workspaceRoot}",
+            "environment": [],
+            "externalConsole": true,
+            "miDebuggerServerAddress": "localhost:4242",
+            "serverLaunchTimeout": 2000,
+            "targetArchitecture": "ARM",
+            "setupCommands": [
+                {
+                    "text": "cd ${workspaceRoot}"
+                },
+                {
+                    "text": "source .gdbinit"
+                },
+                {
+                    "text": "target remote localhost:4242"
+                },
+                {
+                    "text": "file out/helloworld@starterkit/binary/helloworld@starterkit.elf"
+                },
+                {
+                    "text": "break application_start"
+                }
+            ],
+            "customLaunchSetupCommands": [],
+            "launchCompleteCommand": "exec-run",
+            "osx": {
+                "MIMode": "gdb",
+                "miDebuggerPath": "arm-none-eabi-gdb"
+            },
+            "linux": {
+                "MIMode": "gdb",
+                "miDebuggerPath": "arm-none-eabi-gdb"
+            },
+            "windows": {
+                "MIMode": "gdb",
+                "miDebuggerPath": "arm-none-eabi-gdb.exe"
+            }
+        }
+    ]
+}
