@@ -28,39 +28,44 @@
 #ifndef _AWSS_MAIN_H_
 #define _AWSS_MAIN_H_
 
-#define AWSS_VER                       "{\"smartconfig\":\"2.0\",\"zconfig\":\"2.0\",\"router\":\"2.0\",\"ap\":\"2.0\"}"
+#include "log.h"
 
-#define DEFAULT_SSID                   zc_default_ssid
-#define DEFAULT_PASSWD                 zc_default_passwd
-#define ADHA_SSID                      zc_adha_ssid
-#define ADHA_PASSWD                    zc_adha_passwd
+#define AWSS_VER                                                              \
+    "{\"smartconfig\":\"2.0\",\"zconfig\":\"2.0\",\"router\":\"2.0\",\"ap\":" \
+    "\"2.0\"}"
 
-#define WLAN_CONNECTION_TIMEOUT_MS     (30 * 1000)
-#define DEV_INFO_LEN_MAX               (512)
+#define DEFAULT_SSID zc_default_ssid
+#define DEFAULT_PASSWD zc_default_passwd
+#define ADHA_SSID zc_adha_ssid
+#define ADHA_PASSWD zc_adha_passwd
 
-#if defined(__cplusplus)  /* If this is a C++ compiler, use C linkage */
+#define WLAN_CONNECTION_TIMEOUT_MS (30 * 1000)
+#define DEV_INFO_LEN_MAX (512)
+
+#if defined(__cplusplus) /* If this is a C++ compiler, use C linkage */
 extern "C"
 {
 #endif
 
-#define AWSS_DEBUG 0
+#define AWSS_DEBUG 1
 #if (AWSS_DEBUG == 1)
-#define awss_debug(fmt, args...) printf(fmt, ##args)
+#define awss_debug(fmt, args...) os_printf(fmt, ##args)
 #else
 #define awss_debug(fmt, args...)
 #endif
 
-extern const char *zc_default_ssid;
-extern const char *zc_default_passwd;
-extern const char *zc_adha_ssid;
-extern const char *zc_adha_passwd;
+    extern const char *zc_default_ssid;
+    extern const char *zc_default_passwd;
+    extern const char *zc_adha_ssid;
+    extern const char *zc_adha_passwd;
 
-int __awss_start(void);
-int __awss_stop(void);
+    int __awss_start(void);
+    int __awss_stop(void);
 
-int awss_cancel_aha_monitor(void);
+    int awss_cancel_aha_monitor(void);
+    int awss_event_post(int event);
 
-#if defined(__cplusplus)  /* If this is a C++ compiler, use C linkage */
+#if defined(__cplusplus) /* If this is a C++ compiler, use C linkage */
 }
 #endif
 

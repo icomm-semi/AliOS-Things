@@ -36,6 +36,8 @@
 #include "zconfig_protocol.h"
 #include "passwd.h"
 #include "awss_main.h"
+#include "awss_timer.h"
+#include "awss.h"
 
 #if defined(__cplusplus)  /* If this is a C++ compiler, use C linkage */
 extern "C"
@@ -280,7 +282,7 @@ static inline int zconfig_recv_completed(u8 tods)
             pkg_len(3) = ssid_len | 0x200;    /* 0x200 is the index 3 */
             pkg_score(3) = SSID_AUTO_COMPLETE_SCORE;
 
-            for (i = 5; i < ssid_len + 5; i++) {
+            for (i = 5; i < ssid_len + 5; i ++) {
                 pkg_len(i) = (zc_ssid[i - 5] - 32) | (0x100 + 0x80 * ((i - 1) % GROUP_NUMBER));
                 pkg_score(i) =  SSID_AUTO_COMPLETE_SCORE;
             }
@@ -301,7 +303,6 @@ static inline int zconfig_recv_completed(u8 tods)
                 zc_ssid_is_gbk = 0;
             }
 
-
             buf = os_zalloc(ssid_encode_len + 1);
             bug_on(!buf, "malloc failed!\r\n");
 
@@ -313,7 +314,7 @@ static inline int zconfig_recv_completed(u8 tods)
             pkg_len(3) = buf_len | 0x200;    /* 0x200 is the index 3 */
             pkg_score(3) =  SSID_AUTO_COMPLETE_SCORE;
 
-            for (i = 5; i < buf_len + 5; i++) {
+            for (i = 5; i < buf_len + 5; i ++) {
                 pkg_len(i) = buf[i - 5] | (0x100 + 0x80 * ((i - 1) % GROUP_NUMBER));
                 pkg_score(i) =  SSID_AUTO_COMPLETE_SCORE;
             }
@@ -409,6 +410,7 @@ static inline int zconfig_get_ssid_passwd(u8 tods)
         }
         tods = tods_tmp;
         ret = -1;
+        awss_event_post(AWSS_CS_ERR);
         goto exit;
     }
 
@@ -471,6 +473,7 @@ static inline int zconfig_get_ssid_passwd(u8 tods)
         if (is_utf8((const char *)zc_passwd, passwd_len) == 0) {
             os_printf("passwd err\r\n");
             memset(zconfig_data, 0, sizeof(*zconfig_data));
+            awss_event_post(AWSS_PASSWD_ERR);
             ret = -1;
             goto exit;
         }
@@ -646,6 +649,7 @@ static inline int get_ssid_passwd_from_w(u8 *in, int total_len, u8 *src, u8 *bss
     cal_crc = zconfig_checksum_v3(in, 1 + ssid_len + passwd_len);
     if (crc != cal_crc) {
         awss_debug("wps crc check error: recv 0x%x != 0x%x\r\n", crc, cal_crc);
+        awss_event_post(AWSS_CS_ERR);
         /*
          * use zconfig_checksum_v3() because
          * java modified UTF-8, U+C080 equal U+00,
@@ -700,6 +704,7 @@ static inline int get_ssid_passwd_from_w(u8 *in, int total_len, u8 *src, u8 *bss
             if (is_utf8((const char *)tmp_passwd, passwd_len) == 0) {
                 memset(zconfig_data, 0, sizeof(*zconfig_data));
                 warn_on(1, "p2p decrypt passwd content err\r\n");
+                awss_event_post(AWSS_PASSWD_ERR);
                 return GOT_NOTHING;
             }
             break;
@@ -1035,8 +1040,7 @@ static inline int try_to_sync_pos(u8 tods, u16 last_sn, u8 sn, int last_group_po
 
 retry:
     for (i = 0; i <= zconfig_get_data_len(); i += GROUP_NUMBER) {
-        for (match = 0, score = score_max, j = 1;
-             j <= GROUP_NUMBER; j++) {
+        for (match = 0, score = score_max, j = 1; j <= GROUP_NUMBER; j ++) {
             if (!tmp_score(j)) {
                 continue;
             }
@@ -2160,6 +2164,9 @@ void zconfig_force_destroy(void)
         os_free((void *)adha_aplist);
         adha_aplist = NULL;
     }
+
+    awss_stop_timer(clr_aplist_timer);
+    clr_aplist_timer = NULL;
 }
 
 #if defined(__cplusplus)  /* If this is a C++ compiler, use C linkage */

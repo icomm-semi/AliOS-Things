@@ -82,7 +82,7 @@ enum LOGLEVEL_BIT {
 do {\
     if (CON) {\
         os_printf(COLOR"<%s> [%s#%d] : ",\
-            LVL, __FUNCTION__, __LINE__);\
+			LVL, __FUNCTION__, __LINE__);\
         os_printf(FMT COL_DEF"\r\n", ##__VA_ARGS__);\
     }\
 }while(0)

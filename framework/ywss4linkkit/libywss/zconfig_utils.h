@@ -36,35 +36,35 @@ extern "C"
 #endif
 
 #ifndef DEBUG
-#define __zc_loglevel_printf(log_level, format, ...)    do { } while (0)
+    #define __zc_loglevel_printf(log_level, format, ...)	do { } while (0)
 #else
-#define __zc_loglevel_printf(log_level, format, ...)    \
-    do {                                                    \
-            os_printf(format, ##__VA_ARGS__);       \
+    #define __zc_loglevel_printf(log_level, format, ...)	\
+    do {													\
+            os_printf(format, ##__VA_ARGS__);		\
     } while (0)
 #endif //end of ifndef DEBUG
 
-//for library safety, close the log output
-#define log(format, ...)                        __zc_loglevel_printf(LOGLEVEL_DEBUG, format, ##__VA_ARGS__)
-#define info(format, ...)                       __zc_loglevel_printf(LOGLEVEL_INFO, format, ##__VA_ARGS__)
-#define warn(format, ...)                       __zc_loglevel_printf(LOGLEVEL_WARN, format, ##__VA_ARGS__)
-#define error(format, ...)                      __zc_loglevel_printf(LOGLEVEL_ERROR, format, ##__VA_ARGS__)
+//for library safety, close the log output 
+#define log(format, ...)						__zc_loglevel_printf(LOGLEVEL_DEBUG, format, ##__VA_ARGS__)
+#define info(format, ...)						__zc_loglevel_printf(LOGLEVEL_INFO, format, ##__VA_ARGS__)
+#define warn(format, ...)						__zc_loglevel_printf(LOGLEVEL_WARN, format, ##__VA_ARGS__)
+#define error(format, ...)						__zc_loglevel_printf(LOGLEVEL_ERROR, format, ##__VA_ARGS__)
 
-#define bug_on(condition, format, ...)                          \
-do {                                            \
-        if (condition) {                            \
-            error("########BUG ON %d!!!\r\n", __LINE__);            \
-            error(format, ##__VA_ARGS__);                   \
-            while (1);                          \
-        }                                       \
+#define bug_on(condition, format, ...)							\
+do {											\
+		if (condition) {							\
+			error("########BUG ON %d!!!\r\n", __LINE__);			\
+			error(format, ##__VA_ARGS__);					\
+			while (1);							\
+		}										\
 } while (0)
 
-#define warn_on(condition, format, ...)                         \
-do {                                            \
-        if (condition) {                            \
-            warn("########WARNING ON %d!!!\r\n", __LINE__);         \
-            warn(format, ##__VA_ARGS__);                    \
-        }                                   \
+#define warn_on(condition, format, ...)							\
+do {											\
+		if (condition) {							\
+			warn("########WARNING ON %d!!!\r\n", __LINE__);			\
+			warn(format, ##__VA_ARGS__);					\
+		}									\
 } while (0)
 
 void dump_mac(uint8_t *src, uint8_t *dst);
@@ -79,4 +79,4 @@ void produce_random(uint8_t *random, unsigned int len);
 }
 #endif
 
-#endif  // _UTILS_H_
+#endif	// _UTILS_H_

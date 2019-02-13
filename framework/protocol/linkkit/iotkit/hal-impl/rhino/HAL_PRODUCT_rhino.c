@@ -12,6 +12,7 @@
 #define CHIP_ID "AosAwssChiID"
 
 
+
 /**
  * @brief   获取设备的`Partner ID`, 仅用于紧密合作伙伴
  *
@@ -20,7 +21,7 @@
  */
 int HAL_GetPartnerID(_OU_ char pid_str[PID_STR_MAXLEN])
 {
-    strncpy(pid_str, PARTNER_ID, PID_STR_MAXLEN - 1);
+    strncpy(pid_str, PARTNER_ID, PID_STR_MAXLEN-1);
     return strlen(pid_str);
 }
 
@@ -33,7 +34,7 @@ int HAL_GetPartnerID(_OU_ char pid_str[PID_STR_MAXLEN])
  */
 int HAL_GetModuleID(_OU_ char mid_str[MID_STR_MAXLEN])
 {
-    strncpy(mid_str, MODULE_ID, MID_STR_MAXLEN - 1);
+    strncpy(mid_str, MODULE_ID, MID_STR_MAXLEN-1);
     return strlen(mid_str);
 }
 
@@ -45,7 +46,7 @@ int HAL_GetModuleID(_OU_ char mid_str[MID_STR_MAXLEN])
  */
 int HAL_GetProductKey(_OU_ char product_key[PRODUCT_KEY_MAXLEN])
 {
-    strncpy(product_key, PRODUCT_KEY, PRODUCT_KEY_MAXLEN - 1);
+    strncpy(product_key, PRODUCT_KEY, PRODUCT_KEY_MAXLEN-1);
     return strlen(product_key);
 }
 
@@ -57,7 +58,7 @@ int HAL_GetProductKey(_OU_ char product_key[PRODUCT_KEY_MAXLEN])
  */
 int HAL_GetDeviceName(_OU_ char device_name[DEVICE_NAME_MAXLEN])
 {
-    strncpy(device_name, DEVICE_NAME, DEVICE_NAME_MAXLEN - 1);
+    strncpy(device_name, DEVICE_NAME, DEVICE_NAME_MAXLEN-1);
     return strlen(device_name);
 }
 
@@ -69,18 +70,17 @@ int HAL_GetDeviceName(_OU_ char device_name[DEVICE_NAME_MAXLEN])
  */
 int HAL_GetDeviceSecret(_OU_ char device_secret[DEVICE_SECRET_MAXLEN])
 {
-    int len = 0;
 
 #ifdef SUPPORT_PRODUCT_SECRET
-    len = DEVICE_SECRET_MAXLEN - 1;
+    int len = DEVICE_SECRET_MAXLEN - 1;
     if (0 != aos_kv_get("linkkit", device_secret, &len)) {
         return -1;
     }
-#else
-    strncpy(device_secret, DEVICE_SECRET, DEVICE_SECRET_MAXLEN - 1);
-    len = strlen(device_secret);
-#endif
     return len;
+#else
+    strncpy(device_secret, DEVICE_SECRET, DEVICE_SECRET_MAXLEN-1);
+    return strlen(device_secret);
+#endif
 }
 
 /**
@@ -112,7 +112,7 @@ int HAL_SetDeviceSecret(const char device_secret[DEVICE_SECRET_MAXLEN])
  */
 int HAL_GetProductSecret(_OU_ char product_secret[PRODUCT_SECRET_MAXLEN])
 {
-    strncpy(product_secret, PRODUCT_SECRET, PRODUCT_SECRET_MAXLEN - 1);
+    strncpy(product_secret, PRODUCT_SECRET, PRODUCT_SECRET_MAXLEN-1);
     return strlen(product_secret);
 }
 
@@ -124,7 +124,7 @@ int HAL_GetProductSecret(_OU_ char product_secret[PRODUCT_SECRET_MAXLEN])
  */
 int HAL_GetDeviceID(_OU_ char device_id[DEVICE_ID_MAXLEN])
 {
-    strncpy(device_id, DEVICE_ID, DEVICE_ID_MAXLEN - 1);
+    strncpy(device_id, DEVICE_ID, DEVICE_ID_MAXLEN-1);
     return strlen(device_id);
 }
 
@@ -136,7 +136,7 @@ int HAL_GetDeviceID(_OU_ char device_id[DEVICE_ID_MAXLEN])
  */
 int HAL_GetFirmwareVesion(_OU_ char version[FIRMWARE_VERSION_MAXLEN])
 {
-    strncpy(version, FW_VERSION, FIRMWARE_VERSION_MAXLEN - 1);
+    strncpy(version, FW_VERSION, FIRMWARE_VERSION_MAXLEN-1);
     return strlen(version);
 }
 
@@ -147,18 +147,18 @@ int HAL_GetFirmwareVesion(_OU_ char version[FIRMWARE_VERSION_MAXLEN])
  * @param   cid_str : 存放芯片ID字符串的缓冲区数组
  * @return  写到cid_str[]数组中的字符长度, 单位是字节(Byte)
  */
-char *HAL_GetChipID(_OU_ char cid_str[HAL_CID_LEN])
+int HAL_GetChipID(_OU_ char cid_str[HAL_CID_LEN])
 {
-    strncpy(cid_str, CHIP_ID, HAL_CID_LEN - 1);
-    return cid_str;
+    strncpy(cid_str, CHIP_ID, HAL_CID_LEN-1);
+    return strlen(cid_str);
 }
 
 static hal_wireless_info_t hal_wireless_info = {
-    .band    = 0,
+    .band = 0,
     .channel = 1,
-    .rssi    = -30,
-    .snr     = 30,
-    .mac     = { 0x18, 0xFE, 0x34, 0x12, 0x34, 0x56 },
+    .rssi = -30,
+    .snr = 30,
+    .mac = {0x18, 0xFE, 0x34, 0x12, 0x34, 0x56},
     .tx_rate = 1,
     .rx_rate = 1,
 };
@@ -171,3 +171,4 @@ int HAL_GetWirelessInfo(_OU_ hal_wireless_info_t *wireless_info)
 
     return 0;
 }
+

@@ -501,7 +501,7 @@ int HAL_Config_Write(_IN_ const char *buffer, _IN_ int length)
         hal_wifi_start_scan_adv(NULL);
 
         while (netmgr_get_scan_cb_finished() != true) { // block
-            aos_msleep(500);
+            aos_msleep(50);
         }
 
         return 0;
@@ -545,15 +545,15 @@ int HAL_Config_Write(_IN_ const char *buffer, _IN_ int length)
     }
 
 #define KEY_LEN 16 // aes 128 cbc
-
-    static void dump_content(const uint8_t *data, size_t len)
-    {
-        while (len--) {
-            printf("0x%02x ", *data++);
-        }
-        printf("\r\n");
+#if 0
+static void dump_content(const uint8_t *data, size_t len)
+{
+    while (len --) {
+        printf("0x%02x ", *data++);
     }
-
+    printf("\r\n");
+}
+#endif
     /**
      * @brief   初始化AES加密的结构体
      *

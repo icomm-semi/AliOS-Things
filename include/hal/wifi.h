@@ -104,8 +104,8 @@ typedef struct
 typedef struct
 {
     hal_wifi_ap_info_adv_t ap_info;
-    char                   key[64]; /* Security key or PMK of the wlan. */
-    int                    key_len; /* The length of the key. */
+    char                   key[64 + 1]; /* Security key or PMK of the wlan. */
+    int                    key_len;     /* The length of the key. */
     char local_ip_addr[16];   /* Static IP configuration, Local IP address. */
     char net_mask[16];        /* Static IP configuration, Netmask. */
     char gateway_ip_addr[16]; /* Static IP configuration, Router IP address. */

@@ -26,13 +26,13 @@
  */
 #include <stdlib.h>
 #include "json_parser.h"
-#include "work_queue.h"
 #include "enrollee.h"
 #include "utils.h"
 #include "awss_main.h"
 #include "os.h"
 #include "awss_cmp.h"
 #include "awss_wifimgr.h"
+#include "awss_timer.h"
 #include "zconfig_utils.h"
 
 #ifndef AWSS_DISABLE_REGISTRAR
@@ -60,23 +60,15 @@ static int enrollee_enable_somebody_checkin(char *key, char *dev_name, int timeo
 static int awss_enrollee_get_dev_info(char *payload, int payload_len, char *product_key,
                                       char *dev_name, char *cipher, int *timeout);
 
-static struct work_struct enrollee_report_work = {
-    .func = (work_func_t) &enrollee_report,
-    .prio = DEFAULT_WORK_PRIO,      /* smaller digit means higher priority */
-    .name = "report",
-};
-
 /* registrar send pkt interval in ms */
 #define REGISTRAR_TIMEOUT               (60)
-static struct work_struct enrollee_checkin_work = {
-    .func = (work_func_t) &enrollee_checkin,
-    .prio = DEFAULT_WORK_PRIO,      /* smaller digit means higher priority */
-    .name = "checkin",
-};
 
 static struct enrollee_info enrollee_info[MAX_ENROLLEE_NUM];
 static char registrar_inited = 0;
 static char registrar_id = 0;
+
+static void *checkin_timer = NULL;
+static void *enrollee_report_timer = NULL;
 
 #define ALIBABA_OUI                     {0xD8, 0x96, 0xE0}
 void awss_registrar_init(void)
@@ -101,8 +93,10 @@ void awss_registrar_exit(void)
 
     registrar_inited = 0;
 
-    cancel_work(&enrollee_report_work);
-    cancel_work(&enrollee_checkin_work);
+    awss_stop_timer(checkin_timer);
+    checkin_timer = NULL;
+    awss_stop_timer(enrollee_report_timer);
+    enrollee_report_timer = NULL;
 }
 
 int online_connectap_monitor(void *ctx, void *resource, void *remote, void *request)
@@ -198,7 +192,7 @@ int awss_enrollee_checkin(char *topic, int topic_len, void *payload, int payload
 
     char reply[TOPIC_LEN_MAX] = {0};
     awss_build_topic(TOPIC_ZC_CHECKIN_REPLY, reply, TOPIC_LEN_MAX);
-    awss_cmp_mqtt_send(reply, packet, packet_len);
+    awss_cmp_mqtt_send(reply, packet, packet_len, 1);
 
     os_free(dev_name);
     os_free(packet);
@@ -253,7 +247,8 @@ static int enrollee_enable_somebody_cipher(char *key, char *dev_name, char *ciph
                        ENR_CHECKIN_CIPHER);
             enrollee_info[i].state = ENR_CHECKIN_CIPHER;
 
-            queue_work(&enrollee_checkin_work);
+            HAL_Timer_Stop(checkin_timer);
+            HAL_Timer_Start(checkin_timer, 1);
             return 1;/* match */
         }
     }
@@ -290,7 +285,8 @@ static int enrollee_enable_somebody_checkin(char *key, char *dev_name, int timeo
             enrollee_info[i].checkin_timeout = timeout <= 0 ? REGISTRAR_TIMEOUT : timeout;
             enrollee_info[i].checkin_timestamp = os_get_time_ms();
 
-            queue_work(&enrollee_checkin_work);
+            HAL_Timer_Stop(checkin_timer);
+            HAL_Timer_Start(checkin_timer, 1);
             return 1;/* match */
         }
     }
@@ -328,7 +324,7 @@ static int awss_request_cipher_key(int i)
     }
 
     awss_build_topic(TOPIC_ZC_CIPHER, topic, TOPIC_LEN_MAX);
-    awss_cmp_mqtt_send(topic, packet, packet_len);
+    awss_cmp_mqtt_send(topic, packet, packet_len, 1);
 
     os_free(packet);
 
@@ -456,7 +452,8 @@ ongoing:
         registrar_raw_frame_destroy();
     }
 
-    queue_delayed_work(&enrollee_checkin_work, os_awss_get_channelscan_interval_ms() * 15 / 16);
+    HAL_Timer_Stop(checkin_timer);
+    HAL_Timer_Start(checkin_timer, os_awss_get_channelscan_interval_ms() * 15 / 16);
 
     return 1;
 }
@@ -481,7 +478,11 @@ int awss_report_set_interval(char *key, char *dev_name, int interval)
             0 == memcmp(key, enrollee_info[i].pk, enrollee_info[i].pk_len)) {
 
             enrollee_info[i].interval = interval <= 0 ? REGISTRAR_TIMEOUT : interval;
-            queue_work(&enrollee_checkin_work);
+            if (checkin_timer == NULL) {
+                checkin_timer = HAL_Timer_Create("checkin", (void (*)(void *))enrollee_checkin, NULL);
+            }
+            HAL_Timer_Stop(checkin_timer);
+            HAL_Timer_Start(checkin_timer, 1);
             return 0;/* match */
         }
     }
@@ -621,7 +622,7 @@ int awss_report_enrollee(unsigned char *payload, int payload_len, signed char rs
     awss_build_topic(TOPIC_ZC_ENROLLEE, topic, TOPIC_LEN_MAX);
     awss_debug("topic:%s, packet:%s, method:%s\r\n", topic, packet, METHOD_EVENT_ZC_ENROLLEE);
 
-    awss_cmp_mqtt_send(topic, packet, packet_len);
+    awss_cmp_mqtt_send(topic, packet, packet_len, 1);
 
     os_free(packet);
     return 0;
@@ -810,7 +811,11 @@ int enrollee_put(struct enrollee_info *in)
                 0 == memcmp(in->pk, enrollee_info[i].pk, enrollee_info[i].pk_len)) {
                 if (enrollee_info[i].state == ENR_FOUND &&
                     time_elapsed_ms_since(enrollee_info[i].report_timestamp) > enrollee_info[i].interval * 1000) {
-                    queue_work(&enrollee_report_work);
+                    if (enrollee_report_timer == NULL) {
+                        enrollee_report_timer = HAL_Timer_Create("enrollee", (void (*)(void *))enrollee_report, NULL);
+                    }
+                    HAL_Timer_Stop(enrollee_report_timer);
+                    HAL_Timer_Start(enrollee_report_timer, 1);
                 }
                 if (enrollee_info[i].state != ENR_IN_QUEUE) { // already reported
                     return 1;
@@ -838,7 +843,11 @@ int enrollee_put(struct enrollee_info *in)
     awss_debug("new enrollee[%d] dev_name:%s time:%x",
                empty_slot, in->dev_name, os_get_time_ms());
 
-    queue_work(&enrollee_report_work);
+    if (enrollee_report_timer == NULL) {
+        enrollee_report_timer = HAL_Timer_Create("enrollee", (void (*)(void *))enrollee_report, NULL);
+    }
+    HAL_Timer_Stop(enrollee_report_timer);
+    HAL_Timer_Start(enrollee_report_timer, 1);
 
     return 0;
 }

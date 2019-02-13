@@ -38,13 +38,13 @@ extern "C"
 #endif
 
 enum state_machine {
-    STATE_CHN_SCANNING,
-    STATE_CHN_LOCKED_BY_P2P,//by wps/action
-    STATE_CHN_LOCKED_BY_BR,//by broadcast
-    STATE_GOT_BEACON,
-    STATE_RCV_IN_PROGRESS,
-    STATE_RCV_COMPLETE,
-    STATE_RCV_DONE
+	STATE_CHN_SCANNING,
+	STATE_CHN_LOCKED_BY_P2P,//by wps/action
+	STATE_CHN_LOCKED_BY_BR,//by broadcast
+	STATE_GOT_BEACON,
+	STATE_RCV_IN_PROGRESS,
+	STATE_RCV_COMPLETE,
+	STATE_RCV_DONE
 };
 
 #define PASSWD_ENCRYPT_BIT_OFFSET (1)
@@ -61,12 +61,12 @@ enum passwd_encpyt_type {
 };
 
 struct ap_info {
-    u8 auth;
-    u8 channel;
-    u8 encry[2];
-    u8 mac[ETH_ALEN];
-    char ssid[ZC_MAX_SSID_LEN];
-    signed char rssi;
+	u8 auth;
+	u8 channel;
+	u8 encry[2];
+	u8 mac[ETH_ALEN];
+	char ssid[ZC_MAX_SSID_LEN];
+	signed char rssi;
 };
 
 struct adha_info {
@@ -75,7 +75,7 @@ struct adha_info {
     u8 aplist[MAX_APLIST_NUM];
 };
 
-#define flag_tods(tods)           ((tods) ? 'T' : 'F')
+#define flag_tods(tods)			  ((tods) ? 'T' : 'F')
 
 extern const u8 br_mac[ETH_ALEN];
 
@@ -83,7 +83,7 @@ extern const u8 br_mac[ETH_ALEN];
 #define ZC_MIN_CHANNEL            (1)
 static inline int zconfig_is_valid_channel(int channel)
 {
-    return (ZC_MIN_CHANNEL <= channel && channel <= ZC_MAX_CHANNEL);
+	return (ZC_MIN_CHANNEL <= channel && channel <= ZC_MAX_CHANNEL);
 }
 
 #define P2P_ENCODE_TYPE_OFFSET    (0x05)
@@ -109,54 +109,54 @@ enum p2p_encode_type {
 #define ZC_GRP_PKT_IDX_END        (ZC_GRP_PKT_IDX_START + GROUP_NUMBER - 1)
 
 struct package {
-    u16 len;
+	u16 len;
     char score;
 };
 
 struct zconfig_data {
-    struct {
-        u8 state_machine;   /* state for tods/fromds */
-        u8 frame_offset;    /* frame fixed offset */
-        u8 group_pos;       /* latest group pkg pos */
-        u8 cur_pos;         /* data abs. position */
-        u8 max_pos;         /* data max len */
-        u8 last_index;
-        u8 replace;         /* whether pkg has been replaced recently */
-        u8 score_uplimit;
+	struct {
+		u8 state_machine;	/* state for tods/fromds */
+		u8 frame_offset;	/* frame fixed offset */
+		u8 group_pos;		/* latest group pkg pos */
+		u8 cur_pos;			/* data abs. position */
+		u8 max_pos;			/* data max len */
+		u8 last_index;
+		u8 replace;			/* whether pkg has been replaced recently */
+		u8 score_uplimit;
 #define score_max                 (100)
 #define score_high                (98)
 #define score_mid                 (50)
 #define score_low                 (1)
 #define score_min                 (0)
 
-        u8 pos_unsync;
-        u16 group_sn;       /* latest group pkg sn */
-        u16 prev_sn;        /* last sn */
-        u16 last_len;       /* len pkg len */
-        u32 timestamp;      /* last timestamp */
-#define time_interval             (300) //ms
-    } data[2];
+		u8 pos_unsync;
+		u16 group_sn;		/* latest group pkg sn */
+		u16 prev_sn;		/* last sn */
+		u16 last_len;		/* len pkg len */
+		u32 timestamp;		/* last timestamp */
+#define time_interval             (300)	//ms
+	} data[2];
 
-    /* package store */
-    struct package  pkg[2][MAX_PKG_NUMS];
+	/* package store */
+	struct package	pkg[2][MAX_PKG_NUMS];
 
-    struct package  tmp_pkg[2][GROUP_NUMBER + 1];
+	struct package	tmp_pkg[2][GROUP_NUMBER + 1];
 
-    u8 src_mac[ETH_ALEN];
-    u8 channel;             /* from 1 -- 13 */
+	u8 src_mac[ETH_ALEN];
+	u8 channel;				/* from 1 -- 13 */
 
-    /* result, final result */
-    u8 ssid[ZC_MAX_SSID_LEN];
-    u8 passwd[ZC_MAX_PASSWD_LEN];
-    u8 bssid[ETH_ALEN];
-    u8 ssid_is_gbk;
-    u8 ssid_auto_complete_disable;
+	/* result, final result */
+	u8 ssid[ZC_MAX_SSID_LEN];
+	u8 passwd[ZC_MAX_PASSWD_LEN];
+	u8 bssid[ETH_ALEN];
+	u8 ssid_is_gbk;
+	u8 ssid_auto_complete_disable;
 
-    /* used by v2 android p2p protocol, for gbk ssid correctness */
-    u8 android_pre_ssid[ZC_MAX_SSID_LEN];
-    u8 android_ssid[ZC_MAX_SSID_LEN];
-    u8 android_bssid[ETH_ALEN];
-    u8 android_src[ETH_ALEN];
+	/* used by v2 android p2p protocol, for gbk ssid correctness */
+	u8 android_pre_ssid[ZC_MAX_SSID_LEN];
+	u8 android_ssid[ZC_MAX_SSID_LEN];
+	u8 android_bssid[ETH_ALEN];
+	u8 android_src[ETH_ALEN];
 };
 
 extern struct zconfig_data *zconfig_data;

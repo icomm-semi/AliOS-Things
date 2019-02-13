@@ -55,8 +55,6 @@ static const char string_method_name_thing_disable[] __DM_READ_ONLY__ =
   METHOD_NAME_THING_DISABLE;
 static const char string_method_name_thing_delete[] __DM_READ_ONLY__ =
   METHOD_NAME_THING_DELETE;
-static const char string_method_name_thing_tsl_post_reply[] __DM_READ_ONLY__ =
-  METHOD_NAME_THING_TSL_POST_REPLY;
 static const char string_method_name_thing_tsl_get[] __DM_READ_ONLY__ =
   METHOD_NAME_THING_TSL_GET;
 static const char string_method_name_thing_tsl_get_reply[] __DM_READ_ONLY__ =
@@ -125,17 +123,6 @@ static const char string_method_name_rrpc_request_plus[] __DM_READ_ONLY__ =
 static const char string_method_name_rrpc_request[] __DM_READ_ONLY__ =
   METHOD_NAME_RRPC_REQUEST;
 #endif /* RRPC_ENABLED */
-#ifdef LOCAL_CONN_ENABLE
-static const char string_method_name_lan_prefix_get[] __DM_READ_ONLY__ =
-  METHOD_NAME_LAN_PREFIX_GET;
-static const char string_method_name_lan_prefix_get_reply[] __DM_READ_ONLY__ =
-  METHOD_NAME_LAN_PREFIX_GET_REPLY;
-static const char string_method_name_lan_prefix_update[] __DM_READ_ONLY__ =
-  METHOD_NAME_LAN_PREFIX_UPDATE;
-static const char
-  string_method_name_lan_prefix_update_reply[] __DM_READ_ONLY__ =
-    METHOD_NAME_LAN_PREFIX_UPDATE_REPLY;
-#endif /* LOCAL_CONN_ENABLE */
 static const char string_cm_event_handler_prompt_start[] __DM_READ_ONLY__ =
   "\ncm_event_handler:\n###\n";
 static const char string_cm_event_handler_prompt_end[] __DM_READ_ONLY__ =
@@ -177,8 +164,10 @@ static const char string_local_thing_list[] __DM_READ_ONLY__ = "local thing";
 static const char string_local_thing_name_list[] __DM_READ_ONLY__ =
   "local thing name";
 static const char string_sub_thing_list[] __DM_READ_ONLY__ = "sub thing";
+#ifdef SUBDEV_ENABLE
 static const char string_sub_thing_name_list[] __DM_READ_ONLY__ =
   "sub thing name";
+#endif
 static const char string_callback_list[] __DM_READ_ONLY__ = "callback list";
 
 #ifdef SUBDEV_ENABLE
@@ -197,8 +186,9 @@ static const char string_request[] __DM_READ_ONLY__  = "request";
 static const char string_response[] __DM_READ_ONLY__ = "response";
 static const char string_event[] __DM_READ_ONLY__    = "event";
 static const char string_service[] __DM_READ_ONLY__  = "service";
-
+#ifdef SUBDEV_ENABLE
 static const char string_tsl_file_pattern[] __DM_READ_ONLY__ = "%s.%s.txt";
+#endif
 
 static void  free_list_string(void *_thing_name, va_list *params);
 static void  free_list_thing(void *_thing_name, va_list *params);
@@ -400,8 +390,9 @@ static void change_local_thing_login(void *_local_thing, va_list *params)
 
     login = va_arg(*params, int);
 
-    if (dm_thing)
+    if (dm_thing) {
         dm_thing->_login = login;
+    }
 }
 
 static void dm_cm_event_handler(void *pcontext, iotx_cm_event_msg_t *msg,
@@ -471,8 +462,9 @@ static void dm_cm_event_handler(void *pcontext, iotx_cm_event_msg_t *msg,
             local_thing_list_iterator(dm_thing_manager,
                                       change_local_thing_login, 1);
 
-            if (dm_thing_manager->_destructing == 1)
+            if (dm_thing_manager->_destructing == 1) {
                 return;
+            }
             /* subscribe uris not related to tsl. */
             generate_subscribe_uri(dm_thing_manager, NULL, 1, 0,
                                    dm_thing_manager->_product_key,
@@ -533,8 +525,9 @@ static void dm_cm_event_handler(void *pcontext, iotx_cm_event_msg_t *msg,
         if (dm_thing_manager->_local_connected == 0) {
             dm_thing_manager->_local_connected = 1;
 
-            if (dm_thing_manager->_destructing == 1)
+            if (dm_thing_manager->_destructing == 1) {
                 return;
+            }
 
             generate_subscribe_uri(dm_thing_manager, NULL, 0, 0,
                                    dm_thing_manager->_product_key,
@@ -592,13 +585,15 @@ static void print_iotx_cm_message_info(const void *_source, const void *_msg)
     dm_printf("code\t%d\n", iotx_cm_message_info->code);
     dm_printf("id\t%d\n", iotx_cm_message_info->id);
 
-    if (iotx_cm_message_info->method)
+    if (iotx_cm_message_info->method) {
         dm_printf("method\t%s\n", iotx_cm_message_info->method);
+    }
 
     dm_printf("param:\n%s\n", (char *)iotx_cm_message_info->parameter);
     dm_printf("param len:\t%dbytes\n", iotx_cm_message_info->parameter_length);
-    if (iotx_cm_message_info->message)
+    if (iotx_cm_message_info->message) {
         dm_printf("message:\t%s\n", iotx_cm_message_info->message);
+    }
     dm_printf("***\n");
 }
 
@@ -611,8 +606,9 @@ static int check_set_lite_property_for_struct(cJSON *          cjson_obj,
     for (i = 0; i < lite_property->data_type.data_type_specs_number; i++) {
         sub_property = (lite_property_t *)lite_property->data_type.specs + i;
         subobject    = cJSON_GetObjectItem(cjson_obj, sub_property->identifier);
-        if (!subobject)
+        if (!subobject) {
             return -1;
+        }
         if (data_type_type_struct == sub_property->data_type.type) {
             if (check_set_lite_property_for_struct(subobject, sub_property)) {
                 return -1;
@@ -795,8 +791,9 @@ static void find_and_set_lite_property_for_service_property_set(void *   _item,
             dm_snprintf(temp_buf, sizeof(temp_buf), "%d", int_val);
         } else if (lite_property->data_type.type == data_type_type_struct) {
             assert(cJSON_IsObject(temp_cjson_obj));
-            if (!cJSON_IsObject(temp_cjson_obj))
+            if (!cJSON_IsObject(temp_cjson_obj)) {
                 return;
+            }
             if (check_set_lite_property_for_struct(temp_cjson_obj,
                                                    lite_property)) {
                 dm_printf("invalid json");
@@ -982,8 +979,9 @@ static int parse_and_set_service_input(dm_thing_manager_t *_dm_thing_manager,
     dm_thing_manager_t *dm_thing_manager = _dm_thing_manager;
 
     obj = cJSON_Parse(parameter);
-    if (!obj)
+    if (!obj) {
         return -1;
+    }
 
     for (i = 0; i < service->service_input_data_num; i++) {
         service_input_data = &service->service_input_data[i]; /* inputData */
@@ -991,8 +989,9 @@ static int parse_and_set_service_input(dm_thing_manager_t *_dm_thing_manager,
         property = &service_input_data->lite_property;
 
         item = cJSON_GetObjectItem(obj, property->identifier);
-        if (!item)
+        if (!item) {
             continue;
+        }
 
         snprintf(identifier, sizeof(identifier), "%s.%s", service->identifier,
                  property->identifier);
@@ -1003,8 +1002,9 @@ static int parse_and_set_service_input(dm_thing_manager_t *_dm_thing_manager,
                 string_val = dm_lite_calloc(1, strlen(item->valuestring) + 1);
 
                 if (string_val == NULL) {
-                    if (obj)
+                    if (obj) {
                         cJSON_Delete(obj);
+                    }
                     return -1;
                 }
                 strcpy(string_val, item->valuestring);
@@ -1048,8 +1048,9 @@ static int parse_and_set_service_input(dm_thing_manager_t *_dm_thing_manager,
         }
     }
 
-    if (obj)
+    if (obj) {
         cJSON_Delete(obj);
+    }
 
     return 0;
 }
@@ -1076,13 +1077,15 @@ static void find_and_set_service_input(void *_item, int index, va_list *params)
         if (strstr(iotx_cm_message_info->URI,
                    string_method_name_property_set) != NULL ||
             strstr(iotx_cm_message_info->URI,
-                   string_method_name_property_get) != NULL)
+                   string_method_name_property_get) != NULL) {
             return;
+        }
 
         parameter = iotx_cm_message_info->parameter;
-        if (parameter)
+        if (parameter) {
             parse_and_set_service_input(dm_thing_manager, thing, service,
                                         parameter);
+        }
     }
 }
 
@@ -1111,11 +1114,13 @@ static void dm_cm_register_uri_handler_tsl_get_reply(
                                  cm_message_info->parameter_length);
 
         /* subscribe subjects. */
-        if (dm_thing_manager->_cloud_connected)
+        if (dm_thing_manager->_cloud_connected) {
             generate_subscribe_uri(dm_thing_manager, thing, 1, 0, NULL, NULL);
+        }
 #ifdef LOCAL_CONN_ENABLE
-        if (dm_thing_manager->_local_connected)
+        if (dm_thing_manager->_local_connected) {
             generate_subscribe_uri(dm_thing_manager, thing, 0, 0, NULL, NULL);
+        }
 #endif
     } else {
         thing = dm_thing_manager_generate_new_local_thing(
@@ -1355,7 +1360,8 @@ static void dm_cm_register_uri_handler_topo_add_reply(
             invoke_subdev_callback_list(
               dm_thing_manager, dm_subdev_callback_type_topo_add_success);
 #if 0
-            send_subdev_login_message(dm_thing_manager, request_info->product_key, request_info->device_name, request_info->device_secret, 0, "hmacsha1"); /* "hmacmd5" or "hmacsha1" */
+            send_subdev_login_message(dm_thing_manager, request_info->product_key, request_info->device_name,
+                                      request_info->device_secret, 0, "hmacsha1"); /* "hmacmd5" or "hmacsha1" */
 #endif
         } else {
             invoke_subdev_callback_list(dm_thing_manager,
@@ -1419,16 +1425,18 @@ static void dm_cm_register_uri_handler_permit_join(
 
     assert(params_obj);
 
-    if (!params_obj)
+    if (!params_obj) {
         return;
+    }
 
     params_pk_obj   = cJSON_GetObjectItem(params_obj, "productKey");
     params_time_obj = cJSON_GetObjectItem(params_obj, "time");
 
     assert(params_pk_obj && params_time_obj);
 
-    if (!params_pk_obj || !params_time_obj)
+    if (!params_pk_obj || !params_time_obj) {
         return;
+    }
 
     pk     = params_pk_obj->valuestring;
     time_s = params_time_obj->valueint;
@@ -1497,13 +1505,15 @@ static void dm_cm_register_uri_handler_sub_login_reply(
 
         dm_thing = dm_thing_manager->_thing_id;
         if (dm_thing_manager->_code == 200) {
-            if (dm_thing)
+            if (dm_thing) {
                 dm_thing->_login = 1;
+            }
             invoke_subdev_callback_list(dm_thing_manager,
                                         dm_subdev_callback_type_login_success);
         } else {
-            if (dm_thing)
+            if (dm_thing) {
                 dm_thing->_login = 0;
+            }
             invoke_subdev_callback_list(dm_thing_manager,
                                         dm_subdev_callback_type_login_fail);
         }
@@ -1513,8 +1523,9 @@ static void dm_cm_register_uri_handler_sub_login_reply(
         /* get tsl if need */
         sub_thing = dm_thing_manager->_sub_thing_id;
 
-        if (!sub_thing || !*sub_thing)
+        if (!sub_thing || !*sub_thing) {
             return;
+        }
 
         if ((*sub_thing)->get_property_number(sub_thing) == 0 &&
             (*sub_thing)->get_service_number(sub_thing) == 0 &&
@@ -1544,13 +1555,15 @@ static void dm_cm_register_uri_handler_sub_login_reply(
             }
         }
         /* subscribe subjects. */
-        if (dm_thing_manager->_cloud_connected)
+        if (dm_thing_manager->_cloud_connected) {
             generate_subscribe_uri(dm_thing_manager, sub_thing, 1, 0, NULL,
                                    NULL);
+        }
 #ifdef LOCAL_CONN_ENABLE
-        if (dm_thing_manager->_local_connected)
+        if (dm_thing_manager->_local_connected) {
             generate_subscribe_uri(dm_thing_manager, sub_thing, 0, 0, NULL,
                                    NULL);
+        }
         IOT_CM_Add_Sub_Device((*sub_thing)->return_product_key(sub_thing),
                               (*sub_thing)->return_device_name(sub_thing),
                               NULL);
@@ -1566,7 +1579,7 @@ static void dm_cm_register_uri_handler_sub_logout_reply(
     iotx_cm_message_info_t *cm_message_info  = _cm_message_info;
     request_info_t *        request_info;
 #if 0
-    list_t** list;
+    list_t **list;
 #endif
     dm_thing_t *dm_thing;
 
@@ -1583,8 +1596,9 @@ static void dm_cm_register_uri_handler_sub_logout_reply(
 
         dm_thing = dm_thing_manager->_thing_id;
         if (dm_thing_manager->_code == 200) {
-            if (dm_thing)
+            if (dm_thing) {
                 dm_thing->_login = 0;
+            }
             invoke_subdev_callback_list(dm_thing_manager,
                                         dm_subdev_callback_type_logout_success);
 #if 0
@@ -1598,8 +1612,9 @@ static void dm_cm_register_uri_handler_sub_logout_reply(
             dm_thing_manager->_sub_thing_id = 0;
 #endif
         } else {
-            if (dm_thing)
+            if (dm_thing) {
                 dm_thing->_login = 1;
+            }
             invoke_subdev_callback_list(dm_thing_manager,
                                         dm_subdev_callback_type_logout_fail);
         }
@@ -1678,8 +1693,9 @@ static void dm_cm_register_uri_handler_sub_register_reply(
                   register_response_data_item_obj, "deviceSecret");
 
                 assert(device_secret_obj);
-                if (!device_secret_obj)
+                if (!device_secret_obj) {
                     goto exit;
+                }
 #ifndef CJSON_STRING_ZEROCOPY
                 strcpy(subdev_secret, device_secret_obj->valuestring);
 #else
@@ -1751,8 +1767,9 @@ static void dm_cm_register_uri_handler_property_post(
     dm_thing_manager_t *    dm_thing_manager = _dm_thing_manager;
     iotx_cm_message_info_t *cm_message_info  = _cm_message_info;
 
-    if (strstr(cm_message_info->URI, string_method_name_property_post_reply))
+    if (strstr(cm_message_info->URI, string_method_name_property_post_reply)) {
         return;
+    }
 
     invoke_callback_list(dm_thing_manager, dm_callback_type_local_post);
 }
@@ -1789,8 +1806,9 @@ static dm_cm_register_uri_handler_fp_t dm_cm_register_uri_handler_choose(
     dm_cm_register_uri_handler_fp_t dm_cm_register_uri_handler_fp = NULL;
     iotx_cm_message_info_t *        cm_message_info = _cm_message_info;
 
-    if (!cm_message_info->URI)
+    if (!cm_message_info->URI) {
         return NULL;
+    }
 
     if (
       strstr(
@@ -1912,8 +1930,9 @@ static void dm_cm_register_handler_message_type_process(
     iotx_cm_message_info_t *cm_message_info  = _cm_message_info;
     thing_t **              thing            = dm_thing_manager->_thing_id;
 
-    if (!thing)
+    if (!thing) {
         return;
+    }
 
     if (cm_message_info->message_type == IOTX_CM_MESSAGE_REQUEST) {
         dm_thing_manager->_request_id = cm_message_info->id;
@@ -2029,8 +2048,9 @@ static void dm_cm_register_handler(iotx_cm_send_peer_t *   _source,
     dm_cm_register_uri_handler_fp =
       dm_cm_register_uri_handler_choose(dm_thing_manager, cm_message_info);
 
-    if (dm_cm_register_uri_handler_fp)
+    if (dm_cm_register_uri_handler_fp) {
         dm_cm_register_uri_handler_fp(dm_thing_manager, cm_message_info);
+    }
 
     dm_cm_register_handler_clear_message_info(cm_message_info);
 }
@@ -2059,8 +2079,9 @@ static void send_request_to_uri(void *_dm_thing_manager, const char *_uri)
     /* subtitute '/' by '.' */
     do {
         p = strchr(method_buff, '/');
-        if (p)
+        if (p) {
             *p = '.';
+        }
     } while (p);
 
     dm_thing_manager->_method = method_buff;
@@ -2185,8 +2206,9 @@ static void *dm_thing_manager_ctor(void *_self, va_list *params)
     self->_destructing             = 0;
 
     list = (list_t **)self->_callback_list;
-    if (callback_func)
+    if (callback_func) {
         list_insert(list, callback_func);
+    }
 
     /* get relative information. */
     HAL_GetProductKey(self->_product_key);
@@ -2310,8 +2332,9 @@ static void generate_thing_event_service_subscribe_uri(void *_item, int index,
     int  rrpc                          = 1;
 #endif
 
-    if (!_item)
+    if (!_item) {
         return;
+    }
 
     dm_thing_manager = va_arg(*params, void *);
     thing            = va_arg(*params, void *);
@@ -2400,7 +2423,7 @@ static void generate_subscribe_uri(void *_dm_thing_manager, void *_thing,
         string_method_name_thing_disable,
     };
 
-    if (dm_thing_manager->_cloud_connected == 0) {
+    if (dm_thing_manager->_cloud_connected == 0 && cloud) {
         dm_log_err("subscribe not allowed when cloud not connected");
         return;
     }
@@ -2522,8 +2545,9 @@ static void *dm_thing_manager_generate_new_local_thing(void *      _self,
             generate_subscribe_uri(self, thing, 1, 0, NULL, NULL);
         }
 #ifdef LOCAL_CONN_ENABLE
-        if (self->_local_connected)
+        if (self->_local_connected) {
             generate_subscribe_uri(self, thing, 0, 0, NULL, NULL);
+        }
 #endif
         /* invoke callback funtions. */
         invoke_callback_list(self, dm_callback_type_new_thing_created);
@@ -2545,8 +2569,9 @@ static int dm_thing_manager_add_callback_function(
 
     assert(list);
 
-    if (callback_func)
+    if (callback_func) {
         list_insert(list, callback_func);
+    }
 
     return 0;
 }
@@ -2742,9 +2767,10 @@ static void set_property_value(void *_thing, va_list *params)
         if (strchr(dm_thing_manager->_identifier, '.') == NULL &&
             strchr(dm_thing_manager->_identifier, '[') == NULL &&
             strchr(dm_thing_manager->_identifier, ']') == NULL) {
-            if (dm_thing_manager->_ret == 0 && dm_thing_manager->_property_identifier_set_from_cloud)
+            if (dm_thing_manager->_ret == 0 && dm_thing_manager->_property_identifier_set_from_cloud) {
                 invoke_callback_list(dm_thing_manager,
                                      dm_callback_type_property_value_set);
+            }
         }
     }
 }
@@ -2828,8 +2854,9 @@ static int dm_thing_manager_get_thing_property_value(void *      _self,
         sub_thing_list_iterator(self, get_property_value, self);
     }
 #endif
-    if (value_str)
+    if (value_str) {
         *value_str = self->_get_value_str;
+    }
 
     return self->_ret;
 }
@@ -2882,8 +2909,9 @@ static int dm_thing_manager_get_thing_event_output_value(void *      _self,
     }
 #endif
 
-    if (value_str)
+    if (value_str) {
         *value_str = self->_get_value_str;
+    }
 
     return self->_ret;
 }
@@ -2907,8 +2935,9 @@ static int dm_thing_manager_get_thing_service_input_value(
         sub_thing_list_iterator(self, get_service_input_output_value, self);
     }
 #endif
-    if (value_str)
+    if (value_str) {
         *value_str = self->_get_value_str;
+    }
 
     return self->_ret;
 }
@@ -3009,10 +3038,12 @@ static int install_lite_property_to_message_info(
             }
         }
         q = property_key_value_buff + strlen(property_key_value_buff) - 1;
-        if (*q == '[')
+        if (*q == '[') {
             *(q + 1) = ']';
-        if (*q == ',')
+        }
+        if (*q == ',') {
             *(q) = ']';
+        }
 
         dm_thing->_arr_index = -1;
 
@@ -3030,8 +3061,9 @@ static int install_lite_property_to_message_info(
                                  dm_thing_manager->_get_value_str);
     }
 
-    if (p)
+    if (p) {
         dm_lite_free(p);
+    }
 
     return ret;
 }
@@ -3066,15 +3098,17 @@ static void clear_and_set_message_info(message_info_t **   _message_info,
     assert(message_info && *message_info && dm_thing_manager);
 
     if (message_info == NULL || *message_info == NULL ||
-        dm_thing_manager == NULL)
+        dm_thing_manager == NULL) {
         return;
+    }
 
     thing = dm_thing_manager->_thing_id;
 
     get_product_key_device_name(product_key, device_name, thing,
                                 dm_thing_manager);
-    if (0 == dm_thing_manager->_id)
+    if (0 == dm_thing_manager->_id) {
         dm_thing_manager->_id++;
+    }
 
     (*message_info)->clear(message_info);
 
@@ -3144,8 +3178,9 @@ static void install_property_to_message_info(void *_item, int index,
                         p = property_key_value_buff + params_val_len - 1;
 
                         /* not the last item, chang from '}' to ','. */
-                        if (p && *p == '}')
+                        if (p && *p == '}') {
                             *p = ',';
+                        }
 
                         if (struct_lite_property->data_type.type ==
                               data_type_type_text &&
@@ -3206,8 +3241,9 @@ static void handle_event_key_value(void *_item, int index, va_list *params)
            (*message_info)->set_message_type && thing && *thing);
 
     event = _item;
-    if (strcmp(event->identifier, dm_thing_manager->_identifier) != 0)
+    if (strcmp(event->identifier, dm_thing_manager->_identifier) != 0) {
         return;
+    }
 
     dm_thing_manager->_method = event->method;
 
@@ -3223,8 +3259,9 @@ static void handle_event_key_value(void *_item, int index, va_list *params)
     /* subtitute '.' by '/' */
     do {
         p = strchr(method_buff, '.');
-        if (p)
+        if (p) {
             *p = '/';
+        }
     } while (p);
 
     dm_thing_manager_install_product_key_device_name(dm_thing_manager, thing,
@@ -3291,8 +3328,9 @@ static void handle_service_key_value(void *_item, int index, va_list *params)
     char rrpc_message_id[24] = { 0 };
 #endif
 
-    if (!_item)
+    if (!_item) {
         return;
+    }
 
     dm_thing_manager = va_arg(*params, void *);
     message_info     = va_arg(*params, message_info_t **);
@@ -3305,8 +3343,9 @@ static void handle_service_key_value(void *_item, int index, va_list *params)
     list    = dm_thing_manager->_service_property_get_identifier_list;
 
     if (service && service->identifier &&
-        strcmp(service->identifier, dm_thing_manager->_identifier) != 0)
+        strcmp(service->identifier, dm_thing_manager->_identifier) != 0) {
         return;
+    }
 
     dm_thing_manager->_method = service->method;
 
@@ -3316,8 +3355,9 @@ static void handle_service_key_value(void *_item, int index, va_list *params)
     /* subtitute '.' by '/' */
     do {
         p = strchr(method_buff, '.');
-        if (p)
+        if (p) {
             *p = '/';
+        }
     } while (p);
 
     dm_thing_manager_install_product_key_device_name(dm_thing_manager, thing,
@@ -3481,8 +3521,9 @@ static int check_extended_info_params(const char *params)
 
     array_size = cJSON_GetArraySize(params_obj);
 
-    if (array_size <= 0)
+    if (array_size <= 0) {
         return -1;
+    }
 
     cJSON_Delete(params_obj);
 
@@ -3527,8 +3568,9 @@ static int dm_thing_manager_trigger_extended_info_update(void *      _self,
         sub_thing_list_iterator(self, check_thing_id, self);
     }
 #endif
-    if (self->_ret != 0)
+    if (self->_ret != 0) {
         return -1;
+    }
 
     thing = (thing_t **)thing_id;
 
@@ -3536,8 +3578,9 @@ static int dm_thing_manager_trigger_extended_info_update(void *      _self,
     /* subtitute '/' by '.' */
     do {
         p = strchr(method_buff, '/');
-        if (p)
+        if (p) {
             *p = '.';
+        }
     } while (p);
 
     self->_method = method_buff;
@@ -3595,8 +3638,9 @@ static int dm_thing_manager_trigger_extended_info_delete(void *      _self,
         sub_thing_list_iterator(self, check_thing_id, self);
     }
 #endif
-    if (self->_ret != 0)
+    if (self->_ret != 0) {
         return -1;
+    }
 
     thing = (thing_t **)thing_id;
 
@@ -3604,8 +3648,9 @@ static int dm_thing_manager_trigger_extended_info_delete(void *      _self,
     /* subtitute '/' by '.' */
     do {
         p = strchr(method_buff, '/');
-        if (p)
+        if (p) {
             *p = '.';
+        }
     } while (p);
 
     self->_method = method_buff;
@@ -3656,8 +3701,9 @@ static int generate_raw_message_info(void *_dm_thing_manager, void *_thing,
     clear_and_set_message_info(message_info, dm_thing_manager);
 
     ret = (*message_info)->set_uri(message_info, uri_buff);
-    if (ret == -1)
+    if (ret == -1) {
         return ret;
+    }
 
     (*message_info)
       ->set_message_type(message_info, DM_CM_MSG_INFO_MESSAGE_TYPE_RAW);
@@ -3665,8 +3711,9 @@ static int generate_raw_message_info(void *_dm_thing_manager, void *_thing,
     ret = (*message_info)
             ->set_raw_data_and_length(message_info, dm_thing_manager->_raw_data,
                                       dm_thing_manager->_raw_data_length);
-    if (ret == -1)
+    if (ret == -1) {
         return ret;
+    }
 
     return 0;
 }
@@ -4163,8 +4210,9 @@ static int send_subdev_topo_add_message(void *_self, const char *subdev_pk,
     p = method_buff;
     do {
         p = strchr(p, '/');
-        if (p)
+        if (p) {
             *p = '.';
+        }
     } while (p);
 
     self->_method = method_buff;
@@ -4237,8 +4285,9 @@ static int send_subdev_register_message(void *_self, const char *subdev_pk,
     p = method_buff;
     do {
         p = strchr(p, '/');
-        if (p)
+        if (p) {
             *p = '.';
+        }
     } while (p);
 
     self->_method = method_buff;
@@ -4281,22 +4330,22 @@ static int send_subdev_register_message(void *_self, const char *subdev_pk,
     return (*cm)->send(cm, message_info);
 }
 #if 0
-static int send_subdev_unregister_message(void* _self, const char* subdev_pk, const char* subdev_dn)
+static int send_subdev_unregister_message(void *_self, const char *subdev_pk, const char *subdev_dn)
 {
 #define UNREGISTER_PACKET_FMT "[{\"productKey\":\"%s\",\"deviceName\":\"%s\"}]"
-    thing_t** sub_thing;
-    dm_thing_manager_t* self = _self;
-    message_info_t** message_info = self->_message_info;
-    cm_abstract_t** cm = self->_cm;
-    const char* sub_product_key = subdev_pk;
-    const char* sub_device_name = subdev_dn;
+    thing_t **sub_thing;
+    dm_thing_manager_t *self = _self;
+    message_info_t **message_info = self->_message_info;
+    cm_abstract_t **cm = self->_cm;
+    const char *sub_product_key = subdev_pk;
+    const char *sub_device_name = subdev_dn;
     char method_buff[METHOD_MAX_LENGTH] = {0};
     char params_buff[256] = {0};
     char uri_buff[URI_MAX_LENGTH];
-    char* p;
+    char *p;
     int is_sub_thing = 0;
 #if 0
-    request_info_t* request_info;
+    request_info_t *request_info;
 #endif
     assert(_self && subdev_pk && subdev_dn);
 
@@ -4305,7 +4354,9 @@ static int send_subdev_unregister_message(void* _self, const char* subdev_pk, co
     p = method_buff;
     do {
         p = strchr(p, '/');
-        if (p) *p = '.';
+        if (p) {
+            *p = '.';
+        }
     } while (p);
 
     self->_method = method_buff;
@@ -4314,7 +4365,8 @@ static int send_subdev_unregister_message(void* _self, const char* subdev_pk, co
 
     (*message_info)->set_message_type(message_info, DM_CM_MSG_INFO_MESSAGE_TYPE_REQUEST);
 
-    dm_snprintf(uri_buff, sizeof(uri_buff), "/sys/%s/%s/%s", self->_product_key, self->_device_name, string_method_name_sub_unregister);
+    dm_snprintf(uri_buff, sizeof(uri_buff), "/sys/%s/%s/%s", self->_product_key, self->_device_name,
+                string_method_name_sub_unregister);
     (*message_info)->set_uri(message_info, uri_buff);
     dm_snprintf(params_buff, sizeof(params_buff), UNREGISTER_PACKET_FMT, sub_product_key, sub_device_name);
     (*message_info)->set_params_data(message_info, params_buff);
@@ -4374,8 +4426,9 @@ static int check_update_subdev_permit_time(
 }
 
 #if 0
-static void* dm_thing_manager_generate_new_sub_thing(void* _self, const char* _product_key, const char* _device_name, const char* _device_secret,
-                                                     const char* tsl, int tsl_len)
+static void *dm_thing_manager_generate_new_sub_thing(void *_self, const char *_product_key, const char *_device_name,
+                                                     const char *_device_secret,
+                                                     const char *tsl, int tsl_len)
 #else
 static void *dm_thing_manager_generate_new_sub_thing(void *_self,
                                                      const char *_product_key,
@@ -4395,10 +4448,13 @@ static void *dm_thing_manager_generate_new_sub_thing(void *_self,
 
     assert(_product_key && _device_name);
 
-    if (!_product_key || !_device_name)
+    if (!_product_key || !_device_name) {
         return NULL;
+    }
 #if 0
-    if (tsl && _device_secret == NULL) return NULL;
+    if (tsl && _device_secret == NULL) {
+        return NULL;
+    }
 #endif
     if (check_update_subdev_permit_time(self) != 0) {
         dm_log_debug("permit join out of time");
@@ -4420,8 +4476,9 @@ static void *dm_thing_manager_generate_new_sub_thing(void *_self,
 
     thing = (thing_t **)new_object(DM_THING_CLASS, thing_name);
 
-    if (!thing)
+    if (!thing) {
         return NULL;
+    }
 
     if (tsl && tsl_len) {
         ret = (*thing)->set_tsl_string(thing, tsl, tsl_len);
@@ -4468,8 +4525,9 @@ static void *dm_thing_manager_generate_new_sub_thing(void *_self,
     }
 #endif
     /* invoke callback funtions. */
-    if (self->_thing_id)
+    if (self->_thing_id) {
         invoke_callback_list(self, dm_callback_type_new_subthing_created);
+    }
 
     return thing;
 }
@@ -4520,8 +4578,9 @@ static int send_subdev_topo_delete_message(void *self, const void *sub_thing_id)
     p = method_buff;
     do {
         p = strchr(p, '/');
-        if (p)
+        if (p) {
             *p = '.';
+        }
     } while (p);
 
     dm_thing_manager->_method = method_buff;
@@ -4555,22 +4614,22 @@ static int send_subdev_topo_delete_message(void *self, const void *sub_thing_id)
     return (*cm)->send(cm, message_info);
 }
 #if 0
-static int send_subdev_topo_get_message(void* self, const char* pk, const char* dn)
+static int send_subdev_topo_get_message(void *self, const char *pk, const char *dn)
 {
-    thing_t** sub_thing;
-    dm_thing_manager_t* dm_thing_manager = self;
-    message_info_t** message_info = dm_thing_manager->_message_info;
-    cm_abstract_t** cm = dm_thing_manager->_cm;
+    thing_t **sub_thing;
+    dm_thing_manager_t *dm_thing_manager = self;
+    message_info_t **message_info = dm_thing_manager->_message_info;
+    cm_abstract_t **cm = dm_thing_manager->_cm;
     int is_sub_thing = 0;
-    const char* sub_product_key = pk;
-    const char* sub_device_name = dn;
+    const char *sub_product_key = pk;
+    const char *sub_device_name = dn;
 
     char method_buff[METHOD_MAX_LENGTH] = {0};
     char params_buff[256] = {0};
     char uri_buff[URI_MAX_LENGTH];
 
-    char* p;
-    request_info_t* request_info;
+    char *p;
+    request_info_t *request_info;
 
     assert(dm_thing_manager && sub_product_key && sub_device_name && message_info && cm);
 
@@ -4579,7 +4638,9 @@ static int send_subdev_topo_get_message(void* self, const char* pk, const char* 
     p = method_buff;
     do {
         p = strchr(p, '/');
-        if (p) *p = '.';
+        if (p) {
+            *p = '.';
+        }
     } while (p);
 
     dm_thing_manager->_method = method_buff;
@@ -4588,7 +4649,8 @@ static int send_subdev_topo_get_message(void* self, const char* pk, const char* 
 
     (*message_info)->set_message_type(message_info, DM_CM_MSG_INFO_MESSAGE_TYPE_REQUEST);
 
-    dm_snprintf(uri_buff, sizeof(uri_buff), "/sys/%s/%s/%s", dm_thing_manager->_product_key, dm_thing_manager->_device_name, string_method_name_topo_get);
+    dm_snprintf(uri_buff, sizeof(uri_buff), "/sys/%s/%s/%s", dm_thing_manager->_product_key, dm_thing_manager->_device_name,
+                string_method_name_topo_get);
     (*message_info)->set_uri(message_info, uri_buff);
     dm_snprintf(params_buff, sizeof(params_buff), TOPO_DELETE_PACKET_FMT, sub_product_key, sub_device_name);
     (*message_info)->set_params_data(message_info, params_buff);
@@ -4680,8 +4742,9 @@ static int dm_thing_manager_remove_sub_thing(void *      _self,
 
     list_iterator(list, check_thing_in_sub_thing_list, self, sub_thing);
 
-    if (self->_ret == -1)
+    if (self->_ret == -1) {
         return -1;
+    }
 
     invoke_callback_list(self, dm_callback_type_subthing_destroyed);
 
@@ -4707,8 +4770,9 @@ static int dm_thing_manager_topo_delete_sub_thing(void *      _self,
 
     list_iterator(list, check_thing_in_sub_thing_list, self, sub_thing);
 
-    if (self->_ret == -1)
+    if (self->_ret == -1) {
         return -1;
+    }
 
     return send_subdev_topo_delete_message(self, self->_sub_thing_id);
 }
@@ -4725,8 +4789,9 @@ static int dm_thing_manager_bind_sub_thing(void *_self, const char *pk,
 
     sub_thing = dm_thing_manager_query_thing_id(self, pk, dn, &is_sub_thing);
 
-    if (sub_thing && !is_sub_thing)
+    if (sub_thing && !is_sub_thing) {
         return -1;
+    }
 
     if (ds) {
         ret = send_subdev_topo_add_message(self, pk, dn, ds, "hmacsha1");
@@ -4749,8 +4814,9 @@ static int dm_thing_manager_unbind_sub_thing(void *_self, const char *pk,
 
     sub_thing = dm_thing_manager_query_thing_id(self, pk, dn, &is_sub_thing);
 
-    if (!sub_thing || !is_sub_thing)
+    if (!sub_thing || !is_sub_thing) {
         return -1;
+    }
 
     ret = send_subdev_topo_delete_message(self, sub_thing);
 
@@ -4766,8 +4832,9 @@ static int dm_thing_manager_login_sub_thing(void *      _self,
     dm_thing_t *        dm_thing;
     int                 ret = -1;
 
-    if (!ds)
+    if (!ds) {
         return -1;
+    }
 
     self->_thing_id = (void *)sub_thing_id;
     self->_ret      = -1;
@@ -4781,8 +4848,9 @@ static int dm_thing_manager_login_sub_thing(void *      _self,
 
     sub_thing_list_iterator(self, check_thing_id, self);
 
-    if (self->_ret != 0)
+    if (self->_ret != 0) {
         return -1;
+    }
 
     sub_thing = (thing_t **)sub_thing_id;
 
@@ -4813,8 +4881,9 @@ static int dm_thing_manager_logout_sub_thing(void *      _self,
 
     sub_thing_list_iterator(self, check_thing_id, self);
 
-    if (self->_ret != 0)
+    if (self->_ret != 0) {
         return -1;
+    }
 
     sub_thing = (thing_t **)sub_thing_id;
 
@@ -4833,8 +4902,9 @@ static int dm_thing_manager_add_subdev_callback_function(
 
     assert(list);
 
-    if (subdev_callback_func)
+    if (subdev_callback_func) {
         list_insert(list, subdev_callback_func);
+    }
 
     return 0;
 }
@@ -4965,8 +5035,9 @@ static void *query_thing_id_by_uri(void *_dm_thing_manager, char *uri)
     } else {
         list = dm_thing_manager->_sub_thing_list;
         list_iterator(list, find_thing_according_uri, dm_thing_manager, uri);
-        if (dm_thing_manager->_thing_id)
+        if (dm_thing_manager->_thing_id) {
             is_subthing = 1;
+        }
     }
 
     if (!dm_thing_manager->_thing_id) {

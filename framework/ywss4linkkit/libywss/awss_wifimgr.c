@@ -37,7 +37,7 @@
 #include "os.h"
 #include "awss_cmp.h"
 #include "awss_notify.h"
-#include "work_queue.h"
+#include "awss_timer.h"
 #include "zconfig_utils.h"
 #include "zconfig_lib.h"
 #include "zconfig_protocol.h"
@@ -54,19 +54,11 @@ extern "C"
     static char               g_req_msg_id[MSG_REQ_ID_LEN];
     static platform_netaddr_t g_wifimgr_req_sa;
 
-    static void               wifimgr_scan_request();
-    static struct work_struct scan_work = {
-        .func = (work_func_t)&wifimgr_scan_request,
-        .prio = 1, /* smaller digit means higher priority */
-        .name = "scan",
-    };
+    static void *scan_req_timer         = NULL;
+    static void *scan_tx_wifilist_timer = NULL;
 
-    static void               wifimgr_scan_tx_wifilist();
-    static struct work_struct scan_tx_wifilist_work = {
-        .func = (work_func_t)&wifimgr_scan_tx_wifilist,
-        .prio = 1, /* smaller digit means higher priority */
-        .name = "scan",
-    };
+    static void wifimgr_scan_request();
+    static void wifimgr_scan_tx_wifilist();
 
     static char  wifi_scan_runninng = 0;
     static void *g_scan_mutex;
@@ -81,9 +73,8 @@ extern "C"
 
     int wifimgr_scan_init(void)
     {
-        if (wifi_scan_runninng) {
+        if (wifi_scan_runninng)
             return 0;
-        }
 
         g_scan_mutex = HAL_MutexCreate();
         INIT_LIST_HEAD(&g_scan_list);
@@ -174,12 +165,10 @@ extern "C"
                 }
             }
 
-            if (other_apinfo) {
+            if (other_apinfo)
                 os_free(other_apinfo);
-            }
-            if (encode_ssid) {
+            if (encode_ssid)
                 os_free(encode_ssid);
-            }
         }
         awss_debug("last_ap:%u\r\n", last_ap);
 
@@ -217,7 +206,12 @@ extern "C"
             HAL_MutexUnlock(g_scan_mutex);
 
             if (last_ap) {
-                queue_work(&scan_tx_wifilist_work);
+                if (scan_tx_wifilist_timer == NULL)
+                    scan_tx_wifilist_timer = HAL_Timer_Create(
+                      "wifilist", (void (*)(void *))wifimgr_scan_tx_wifilist,
+                      NULL);
+                HAL_Timer_Stop(scan_tx_wifilist_timer);
+                HAL_Timer_Start(scan_tx_wifilist_timer, 1);
             }
             awss_debug("sending message to app: %s\n", msg_aplist);
         }
@@ -246,7 +240,10 @@ extern "C"
             return -1;
         }
 
-        queue_work(&scan_work);
+        if (scan_req_timer == NULL)
+            scan_req_timer = HAL_Timer_Create(
+              "scan_req", (void (*)(void *))wifimgr_scan_request, NULL);
+        HAL_Timer_Stop(scan_req_timer);
 
         id = json_get_value_by_name(msg, len, "id", &id_len, 0);
         memset(g_req_msg_id, 0, sizeof(g_req_msg_id));
@@ -266,6 +263,8 @@ extern "C"
                                          topic, request)) {
             awss_debug("sending failed.");
         }
+
+        HAL_Timer_Start(scan_req_timer, 1);
 
         return SHUB_OK;
     }
@@ -513,13 +512,21 @@ extern "C"
         } else {
             switch_ap_done = 1;
             awss_cancel_aha_monitor();
+            HAL_MutexDestroy(g_scan_mutex);
+            g_scan_mutex       = NULL;
+            wifi_scan_runninng = 0;
+            awss_stop_timer(scan_req_timer);
+            scan_req_timer = NULL;
+            awss_stop_timer(scan_tx_wifilist_timer);
+            scan_tx_wifilist_timer = NULL;
 
             void zconfig_force_destroy(void);
             zconfig_force_destroy();
 
             produce_random(aes_random, sizeof(aes_random));
         }
-        awss_debug("connect '%s' %s\r\n", ssid, switch_ap_done == 1 ? "success" : "fail");
+        awss_debug("connect '%s' %s\r\n", ssid,
+                   switch_ap_done == 1 ? "success" : "fail");
 
     SWITCH_AP_END:
         switch_ap_parsed = 0;

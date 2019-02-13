@@ -91,6 +91,7 @@ struct parser_res {
 /* ap list */
 extern struct ap_info *zconfig_aplist;
 extern struct adha_info *adha_aplist;
+extern void *clr_aplist_timer;
 extern u8 zconfig_aplist_num;
 
 int ieee80211_data_extract(u8 *in, int len, int link_type,

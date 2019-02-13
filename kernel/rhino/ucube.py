@@ -24,11 +24,10 @@ src     = Split('''
                    core/k_time.c         
                    common/k_fifo.c       
                    common/k_trace.c
-                   debug/k_overview.c
 ''')
 component = aos_component('rhino', src)
 
-component.add_global_includes('core/include', 'debug/include')
+component.add_global_includes('core/include')
 
-CONFIG_SYSINFO_KERNEL_VERSION = 'AOS-R-1.3.1'
-component.add_global_macros({'SYSINFO_KERNEL_VERSION':'\\"AOS-R-1.3.1\\"'})
+CONFIG_SYSINFO_KERNEL_VERSION = 'AOS-R-1.3.2'
+component.add_global_macros({'SYSINFO_KERNEL_VERSION':'\\"AOS-R-1.3.2\\"'})

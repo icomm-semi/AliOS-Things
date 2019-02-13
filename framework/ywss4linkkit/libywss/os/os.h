@@ -52,16 +52,15 @@ extern "C" {
  * @see None.
  * @note None.
  */
-static inline int os_is_big_endian(void)
-{
-    uint32_t data = 0xFF000000;
+	static inline int os_is_big_endian(void) {
+		uint32_t data = 0xFF000000;
 
-    if (0xFF == *(uint8_t *) & data) {
-        return 1;                                   //big endian
-    }
+		if (0xFF == *(uint8_t *) & data) {
+			return 1;									//big endian
+		}
 
-    return 0;                                       //little endian
-}
+		return 0;										//little endian
+	}
 
 /**
  * @brief Convert the data from byte order of current CPU(the "host") to big-endian.
@@ -72,7 +71,7 @@ static inline int os_is_big_endian(void)
  * @see None.
  * @note None.
  */
-uint16_t os_htobe16(uint16_t data);
+	uint16_t os_htobe16(uint16_t data);
 
 /**
  * @brief Convert the data from host to little-endian.
@@ -83,7 +82,7 @@ uint16_t os_htobe16(uint16_t data);
  * @see None.
  * @note None.
  */
-uint16_t os_htole16(uint16_t data);
+	uint16_t os_htole16(uint16_t data);
 
 /**
  * @brief Convert the data from big-endian to host.
@@ -94,7 +93,7 @@ uint16_t os_htole16(uint16_t data);
  * @see None.
  * @note None.
  */
-uint16_t os_be16toh(uint16_t data);
+	uint16_t os_be16toh(uint16_t data);
 
 /**
  * @brief Convert the data from little-endian to host.
@@ -105,7 +104,7 @@ uint16_t os_be16toh(uint16_t data);
  * @see None.
  * @note None.
  */
-uint16_t os_le16toh(uint16_t data);
+	uint16_t os_le16toh(uint16_t data);
 
 /**
  * @brief Convert the data from host to big-endian.
@@ -116,7 +115,7 @@ uint16_t os_le16toh(uint16_t data);
  * @see None.
  * @note None.
  */
-uint32_t os_htobe32(uint32_t data);
+	uint32_t os_htobe32(uint32_t data);
 
 /**
  * @brief Convert the data from host to little-endian.
@@ -127,7 +126,7 @@ uint32_t os_htobe32(uint32_t data);
  * @see None.
  * @note None.
  */
-uint32_t os_htole32(uint32_t data);
+	uint32_t os_htole32(uint32_t data);
 
 /**
  * @brief Convert the data from big endian to host.
@@ -138,7 +137,7 @@ uint32_t os_htole32(uint32_t data);
  * @see None.
  * @note None.
  */
-uint32_t os_be32toh(uint32_t data);
+	uint32_t os_be32toh(uint32_t data);
 
 /**
  * @brief Convert the data from little-endian to host.
@@ -149,7 +148,7 @@ uint32_t os_be32toh(uint32_t data);
  * @see None.
  * @note None.
  */
-uint32_t os_le32toh(uint32_t data);
+	uint32_t os_le32toh(uint32_t data);
 
 /**
  * @brief Convert the data from host to big-endian.
@@ -160,7 +159,7 @@ uint32_t os_le32toh(uint32_t data);
  * @see None.
  * @note None.
  */
-uint64_t os_htobe64(uint64_t data);
+	uint64_t os_htobe64(uint64_t data);
 
 /**
  * @brief Convert the data from host to little-endian.
@@ -171,7 +170,7 @@ uint64_t os_htobe64(uint64_t data);
  * @see None.
  * @note None.
  */
-uint64_t os_htole64(uint64_t data);
+	uint64_t os_htole64(uint64_t data);
 
 /**
  * @brief Convert the data from big-endian to host.
@@ -182,7 +181,7 @@ uint64_t os_htole64(uint64_t data);
  * @see None.
  * @note None.
  */
-uint64_t os_be64toh(uint64_t data);
+	uint64_t os_be64toh(uint64_t data);
 
 /**
  * @brief Convert the data from little-endian to host.
@@ -193,7 +192,7 @@ uint64_t os_be64toh(uint64_t data);
  * @see None.
  * @note None.
  */
-uint64_t os_le64toh(uint64_t data);
+	uint64_t os_le64toh(uint64_t data);
 
 /**
  * @brief Get unaligned 16 bits data which is big-endian and convert to host byte order.
@@ -203,7 +202,7 @@ uint64_t os_le64toh(uint64_t data);
  * @see None.
  * @note None.
  */
-uint16_t os_get_unaligned_be16(uint8_t *ptr);
+	uint16_t os_get_unaligned_be16(uint8_t * ptr);
 
 /**
  * @brief Get unaligned 16 bits data which is little-endian and convert to host byte order.
@@ -213,7 +212,7 @@ uint16_t os_get_unaligned_be16(uint8_t *ptr);
  * @see None.
  * @note None.
  */
-uint16_t os_get_unaligned_le16(uint8_t *ptr);
+	uint16_t os_get_unaligned_le16(uint8_t * ptr);
 
 /**
  * @brief Get unaligned 32 bits data which is big-endian and convert to host byte order.
@@ -223,7 +222,7 @@ uint16_t os_get_unaligned_le16(uint8_t *ptr);
  * @see None.
  * @note None.
  */
-uint32_t os_get_unaligned_be32(uint8_t *ptr);
+	uint32_t os_get_unaligned_be32(uint8_t * ptr);
 
 /**
  * @brief Get unaligned 32 bits data which is little-endian and convert to host byte order.
@@ -233,7 +232,7 @@ uint32_t os_get_unaligned_be32(uint8_t *ptr);
  * @see None.
  * @note None.
  */
-uint32_t os_get_unaligned_le32(uint8_t *ptr);
+	uint32_t os_get_unaligned_le32(uint8_t * ptr);
 
 /**
  * @brief sleep thread itself.
@@ -243,10 +242,9 @@ uint32_t os_get_unaligned_le32(uint8_t *ptr);
  * @see None.
  * @note None.
  */
-static inline void os_msleep(_IN_ uint32_t ms)
-{
-    platform_msleep(ms);
-}
+	static inline void os_msleep(_IN_ uint32_t ms) {
+		platform_msleep(ms);
+	}
 
 /**
  * @brief sleep thread itself.
@@ -256,10 +254,9 @@ static inline void os_msleep(_IN_ uint32_t ms)
  * @see None.
  * @note None.
  */
-static inline void os_sleep(_IN_ uint32_t sec)
-{
-    platform_msleep(sec * 1000);
-}
+	static inline void os_sleep(_IN_ uint32_t sec) {
+		platform_msleep(sec * 1000);
+	}
 
 /**
  * @brief system reboot immediately.
@@ -268,12 +265,11 @@ static inline void os_sleep(_IN_ uint32_t sec)
  * @see None.
  * @note None.
  */
-static inline void os_reboot()
-{
-    platform_reboot();
-}
+	static inline void os_reboot() {
+		platform_reboot();
+	}
 
-/** @} *///end of os_misc
+	/** @} *///end of os_misc
 
 /***************************************** mutex Interface *****************************************/
 
@@ -288,10 +284,9 @@ static inline void os_reboot()
  * @see None.
  * @note None.
  */
-static inline void *os_mutex_init(void)
-{
-    return platform_mutex_init();
-}
+	static inline void *os_mutex_init(void) {
+		return platform_mutex_init();
+	}
 
 /**
  * @brief Destroy the specified mutex object, it will free related resource.
@@ -301,10 +296,9 @@ static inline void *os_mutex_init(void)
  * @see None.
  * @note None.
  */
-static inline void os_mutex_destroy(_IN_ void *mutex)
-{
-    platform_mutex_destroy(mutex);
-}
+	static inline void os_mutex_destroy(_IN_ void *mutex) {
+		platform_mutex_destroy(mutex);
+	}
 
 /**
  * @brief Waits until the specified mutex is in the signaled state.
@@ -314,10 +308,9 @@ static inline void os_mutex_destroy(_IN_ void *mutex)
  * @see None.
  * @note None.
  */
-static inline void os_mutex_lock(_IN_ void *mutex)
-{
-    platform_mutex_lock(mutex);
-}
+	static inline void os_mutex_lock(_IN_ void *mutex) {
+		platform_mutex_lock(mutex);
+	}
 
 /**
  * @brief Releases ownership of the specified mutex object..
@@ -327,12 +320,11 @@ static inline void os_mutex_lock(_IN_ void *mutex)
  * @see None.
  * @note None.
  */
-static inline void os_mutex_unlock(_IN_ void *mutex)
-{
-    platform_mutex_unlock(mutex);
-}
+	static inline void os_mutex_unlock(_IN_ void *mutex) {
+		platform_mutex_unlock(mutex);
+	}
 
-/** @} */// end of os_mutex
+	/** @} */// end of os_mutex
 
 /*************************************** semaphore Interface ***************************************/
 
@@ -347,10 +339,9 @@ static inline void os_mutex_unlock(_IN_ void *mutex)
  * @see None.
  * @note The recommended value of maximum count of the semaphore is 255.
  */
-static inline void *os_semaphore_init(void)
-{
-    return platform_semaphore_init();
-}
+	static inline void *os_semaphore_init(void) {
+		return platform_semaphore_init();
+	}
 
 /**
  * @brief Destroy the specified semaphore object, it will free related resource.
@@ -360,10 +351,9 @@ static inline void *os_semaphore_init(void)
  * @see None.
  * @note None.
  */
-static inline void os_semaphore_destroy(_IN_ void *sem)
-{
-    platform_semaphore_destroy(sem);
-}
+	static inline void os_semaphore_destroy(_IN_ void *sem) {
+		platform_semaphore_destroy(sem);
+	}
 
 /**
  * @brief Wait until the specified mutex is in the signaled state or the time-out interval elapses.
@@ -379,10 +369,9 @@ static inline void os_semaphore_destroy(_IN_ void *sem)
  * @see None.
  * @note None.
  */
-static inline int os_semaphore_wait(_IN_ void *sem, _IN_ uint32_t timeout_ms)
-{
-    return platform_semaphore_wait(sem, timeout_ms);
-}
+	static inline int os_semaphore_wait(_IN_ void *sem, _IN_ uint32_t timeout_ms) {
+		return platform_semaphore_wait(sem, timeout_ms);
+	}
 
 /**
  * @brief Increases the count of the specified semaphore object by 1.
@@ -392,12 +381,11 @@ static inline int os_semaphore_wait(_IN_ void *sem, _IN_ uint32_t timeout_ms)
  * @see None.
  * @note None.
  */
-static inline void os_semaphore_post(_IN_ void *sem)
-{
-    platform_semaphore_post(sem);
-}
+	static inline void os_semaphore_post(_IN_ void *sem) {
+		platform_semaphore_post(sem);
+	}
 
-/** @} */// end of os_semaphore
+	/** @} */// end of os_semaphore
 
 /**************************************** memory Interface ****************************************/
 
@@ -413,10 +401,9 @@ static inline void os_semaphore_post(_IN_ void *sem)
  * @see None.
  * @note Block value is indeterminate.
  */
-static inline void *os_malloc(_IN_ uint32_t size)
-{
-    return platform_malloc(size);
-}
+    static inline void *os_malloc(_IN_ uint32_t size) {
+        return platform_malloc(size);
+    }
 
 
 /**
@@ -427,10 +414,9 @@ static inline void *os_malloc(_IN_ uint32_t size)
  * @see None.
  * @note None.
  */
-static inline void os_free(_IN_ void *ptr)
-{
-    return platform_free(ptr);
-}
+    static inline void os_free(_IN_ void *ptr) {
+        return platform_free(ptr);
+    }
 
 /**
  * @brief Allocates a memory block with memory initialized to 0,
@@ -441,8 +427,7 @@ static inline void os_free(_IN_ void *ptr)
  * @see None.
  * @note Block value is indeterminate.
  */
-static inline void *os_zalloc(uint32_t size)
-{
+static inline void *os_zalloc(uint32_t size) {
     void *ptr = os_malloc(size);
     if (ptr != NULL) {
         memset(ptr, 0, size);
@@ -467,10 +452,9 @@ static inline void *os_zalloc(uint32_t size)
  * @see None.
  * @note None.
  */
-static inline int os_sys_net_is_ready(void)
-{
-    return platform_sys_net_is_ready();
-}
+	static inline int os_sys_net_is_ready(void) {
+		return platform_sys_net_is_ready();
+	}
 
 /**
  * @brief wait until system network is ready(get ip address).
@@ -480,12 +464,11 @@ static inline int os_sys_net_is_ready(void)
  * @see None.
  * @note None.
  */
-static inline void os_sys_net_wait_ready(void)
-{
-    while (0 == platform_sys_net_is_ready()) {
-        os_msleep(500);
-    }
-}
+	static inline void os_sys_net_wait_ready(void) {
+		while (0 == platform_sys_net_is_ready()) {
+			os_msleep(500);
+		}
+	}
 
 /**
  * @brief Retrieves the number of milliseconds that have elapsed since the system was boot.
@@ -495,17 +478,16 @@ static inline void os_sys_net_wait_ready(void)
  * @see None.
  * @note Add a big offset, for easier caught time overflow bug.
  */
-static inline uint32_t os_get_time_ms(void)
-{
-    static uint32_t fixed_delta;
+	static inline uint32_t os_get_time_ms(void)
+	{
+	    static uint32_t fixed_delta;
 
-    if (!fixed_delta) {
-        fixed_delta = platform_get_time_ms() - 0xFFFF0000;
-    }
+	    if (!fixed_delta)
+	        fixed_delta = platform_get_time_ms() - 0xFFFF0000;
 
-    /* add a big offset, for easier caught time overflow bug */
-    return platform_get_time_ms() - fixed_delta;
-}
+	    /* add a big offset, for easier caught time overflow bug */
+	    return platform_get_time_ms() - fixed_delta;
+	}
 
 /*
  *  These inlines deal with timer wrapping correctly. You are
@@ -514,14 +496,14 @@ static inline uint32_t os_get_time_ms(void)
  *  2. Because if the timer wrap changes in future you won't have to
  *     alter your code.
  */
-static inline uint32_t time_elapsed_ms_since(uint32_t start_timestamp)
-{
-    uint32_t now = os_get_time_ms();
+	static inline uint32_t time_elapsed_ms_since(uint32_t start_timestamp)
+	{
+		uint32_t now = os_get_time_ms();
 
-    return now - start_timestamp;
-}
+		return now - start_timestamp;
+	}
 
-/** @} */// end of os_system
+	/** @} */// end of os_system
 
 /****************************************** io Interface ******************************************/
 
@@ -541,7 +523,7 @@ static inline uint32_t time_elapsed_ms_since(uint32_t start_timestamp)
  */
 #define os_printf(fmt, args ...) platform_printf(fmt, ## args)
 
-/** @} */// end of os_io
+	/** @} */// end of os_io
 
 /*************************************** wifi module Interface ***************************************/
 
@@ -557,10 +539,9 @@ static inline uint32_t time_elapsed_ms_since(uint32_t start_timestamp)
  * @see None.
  * @note None.
  */
-static inline int os_wifi_get_rssi_dbm(void)
-{
-    return platform_wifi_get_rssi_dbm();
-}
+	static inline int os_wifi_get_rssi_dbm(void) {
+		return platform_wifi_get_rssi_dbm();
+	}
 
 /**
  * @brief Get encrypt type for smartconfig.
@@ -579,10 +560,9 @@ static inline int os_wifi_get_rssi_dbm(void)
  * @see None.
  * @note None.
  */
-static inline int os_get_encrypt_type(void)
-{
-    return platform_get_encrypt_type();
-}
+	static inline int os_get_encrypt_type(void) {
+		return platform_get_encrypt_type();
+	}
 
 /**
  * @brief    Get Security level for wifi configuration with connection.
@@ -598,10 +578,9 @@ static inline int os_get_encrypt_type(void)
    @endverbatim
  * @see None.
  */
-static inline int os_get_conn_encrypt_type(void)
-{
-    return platform_get_conn_encrypt_type();
-}
+	static inline int os_get_conn_encrypt_type(void) {
+		return platform_get_conn_encrypt_type();
+	}
 
 /**
  * @brief Get WIFI MAC string with format like: XX:XX:XX:XX:XX:XX.
@@ -611,7 +590,7 @@ static inline int os_get_conn_encrypt_type(void)
  * @see None.
  * @note this func will format mac address string uppercase
  */
-char *os_wifi_get_mac_str(char mac_str[OS_MAC_LEN]);
+	char *os_wifi_get_mac_str(char mac_str[OS_MAC_LEN]);
 
 /**
  * @brief Get WIFI MAC address(digital form)
@@ -621,7 +600,7 @@ char *os_wifi_get_mac_str(char mac_str[OS_MAC_LEN]);
  * @see None.
  * @note None.
  */
-uint8_t *os_wifi_get_mac(uint8_t mac[OS_ETH_ALEN]);
+	uint8_t *os_wifi_get_mac(uint8_t mac[OS_ETH_ALEN]);
 
 /**
  * @brief Get WIFI IP string with format like: xx:xx:xx:xx:xx:xx,
@@ -633,8 +612,7 @@ uint8_t *os_wifi_get_mac(uint8_t mac[OS_ETH_ALEN]);
  * @see None.
  * @note None.
  */
-static inline uint32_t os_wifi_get_ip(char ip_str[OS_IP_LEN], const char *ifname)
-{
+static inline uint32_t os_wifi_get_ip(char ip_str[OS_IP_LEN], const char *ifname) {
     return platform_wifi_get_ip(ip_str, ifname);
 }
 
@@ -647,8 +625,7 @@ static inline uint32_t os_wifi_get_ip(char ip_str[OS_IP_LEN], const char *ifname
  * @see None.
  * @note None.
  */
-static inline int os_wifi_low_power(int timeout_ms)
-{
+static inline int os_wifi_low_power(int timeout_ms) {
     return platform_wifi_low_power(timeout_ms);
 }
 
@@ -660,10 +637,9 @@ static inline int os_wifi_low_power(int timeout_ms)
  * @see None.
  * @note None.
  */
-static inline char *os_get_chipid(char cid_str[OS_CID_LEN])
-{
-    return platform_get_chipid(cid_str);
-}
+	static inline int os_get_chipid(char cid_str[OS_CID_LEN]) {
+		return platform_get_chipid(cid_str);
+	}
 
 /**
  * @brief Get the os version of wifi module firmware.
@@ -673,10 +649,9 @@ static inline char *os_get_chipid(char cid_str[OS_CID_LEN])
  * @see None.
  * @note None.
  */
-static inline char *os_get_version(char version_str[OS_VERSION_LEN])
-{
-    return platform_get_os_version(version_str);
-}
+	static inline char *os_get_version(char version_str[OS_VERSION_LEN]) {
+		return platform_get_os_version(version_str);
+	}
 
 /**
  * @brief Get wifi module name.
@@ -686,12 +661,11 @@ static inline char *os_get_version(char version_str[OS_VERSION_LEN])
  * @see None.
  * @note None.
  */
-static inline int os_get_module_name(char name_str[OS_MODULE_NAME_LEN])
-{
-    return platform_get_module_name(name_str);
-}
+	static inline int os_get_module_name(char name_str[OS_MODULE_NAME_LEN]) {
+		return platform_get_module_name(name_str);
+	}
 
-/** @} */// end of os_wifi_module
+	/** @} */// end of os_wifi_module
 
 /**************************************** config interface ****************************************/
 
@@ -712,10 +686,9 @@ static inline int os_get_module_name(char name_str[OS_MODULE_NAME_LEN])
  * @see None.
  * @note None.
  */
-static inline int os_config_read(char *buffer, int length)
-{
-    return platform_config_read(buffer, length);
-}
+	static inline int os_config_read(char *buffer, int length) {
+		return platform_config_read(buffer, length);
+	}
 
 /**
  * @brief Write configure data from the start of configure zone.
@@ -730,12 +703,11 @@ static inline int os_config_read(char *buffer, int length)
  * @see None.
  * @note None.
  */
-static inline int os_config_write(const char *buffer, int length)
-{
-    return platform_config_write(buffer, length);
-}
+	static inline int os_config_write(const char *buffer, int length) {
+		return platform_config_write(buffer, length);
+	}
 
-/** @} */// end of os_config
+	/** @} */// end of os_config
 
 /*************************************** awss interface ***************************************/
 
@@ -751,10 +723,9 @@ static inline int os_config_write(const char *buffer, int length)
  * @see None.
  * @note The recommended value is 60,000ms.
  */
-static inline int os_awss_get_timeout_interval_ms(void)
-{
-    return platform_awss_get_timeout_interval_ms();
-}
+	static inline int os_awss_get_timeout_interval_ms(void) {
+		return platform_awss_get_timeout_interval_ms();
+	}
 
 /**
  * @brief Get timeout interval in millisecond to connect the default SSID if awss timeout happens.
@@ -764,10 +735,10 @@ static inline int os_awss_get_timeout_interval_ms(void)
  * @see None.
  * @note The recommended value is 0ms, which mean forever.
  */
-static inline int os_awss_get_connect_default_ssid_timeout_interval_ms( void )
-{
-    return platform_awss_get_connect_default_ssid_timeout_interval_ms();
-}
+	static inline int os_awss_get_connect_default_ssid_timeout_interval_ms( void )
+	{
+		return platform_awss_get_connect_default_ssid_timeout_interval_ms();
+	}
 
 /**
  * @brief Get time length, in millisecond, of per channel scan.
@@ -777,12 +748,11 @@ static inline int os_awss_get_connect_default_ssid_timeout_interval_ms( void )
  * @see None.
  * @note None. The recommended value is between 200ms and 400ms.
  */
-static inline int os_awss_get_channelscan_interval_ms(void)
-{
-    return platform_awss_get_channelscan_interval_ms();
-}
+	static inline int os_awss_get_channelscan_interval_ms(void) {
+		return platform_awss_get_channelscan_interval_ms();
+	}
 
-typedef platform_awss_recv_80211_frame_cb_t os_awss_recv_80211_frame_cb_t;
+	typedef platform_awss_recv_80211_frame_cb_t os_awss_recv_80211_frame_cb_t;
 /**
  * @brief Set wifi running at monitor mode,
    and register a callback function which will be called when wifi receive a frame.
@@ -792,10 +762,9 @@ typedef platform_awss_recv_80211_frame_cb_t os_awss_recv_80211_frame_cb_t;
  * @see None.
  * @note None.
  */
-static inline void os_awss_open_monitor(os_awss_recv_80211_frame_cb_t cb)
-{
-    platform_awss_open_monitor(cb);
-}
+	static inline void os_awss_open_monitor(os_awss_recv_80211_frame_cb_t cb) {
+		platform_awss_open_monitor(cb);
+	}
 
 /**
  * @brief Close wifi monitor mode, and set running at station mode.
@@ -805,10 +774,9 @@ static inline void os_awss_open_monitor(os_awss_recv_80211_frame_cb_t cb)
  * @see None.
  * @note None.
  */
-static inline void os_awss_close_monitor(void)
-{
-    platform_awss_close_monitor();
-}
+	static inline void os_awss_close_monitor(void) {
+		platform_awss_close_monitor();
+	}
 
 /**
  * @brief Switch to specific wifi channel.
@@ -820,10 +788,9 @@ static inline void os_awss_close_monitor(void)
  * @see None.
  * @note None.
  */
-static inline void os_awss_switch_channel(char primary_channel, char secondary_channel, uint8_t bssid[OS_ETH_ALEN])
-{
-    platform_awss_switch_channel(primary_channel, secondary_channel, bssid);
-}
+	static inline void os_awss_switch_channel(char primary_channel, char secondary_channel, uint8_t bssid[OS_ETH_ALEN]) {
+		platform_awss_switch_channel(primary_channel, secondary_channel, bssid);
+	}
 
 /**
  * @brief Wifi AP connect function
@@ -844,16 +811,15 @@ static inline void os_awss_switch_channel(char primary_channel, char secondary_c
  * @note None.
  */
 static inline int os_awss_connect_ap(
-    _IN_ uint32_t connection_timeout_ms,
-    _IN_ char ssid[OS_MAX_SSID_LEN],
-    _IN_ char passwd[OS_MAX_PASSWD_LEN],
-    _IN_OPT_ enum AWSS_AUTH_TYPE auth,
-    _IN_OPT_ enum AWSS_ENC_TYPE encry,
-    _IN_OPT_ uint8_t bssid[ETH_ALEN],
-    _IN_OPT_ uint8_t channel)
-{
+        _IN_ uint32_t connection_timeout_ms,
+        _IN_ char ssid[OS_MAX_SSID_LEN],
+        _IN_ char passwd[OS_MAX_PASSWD_LEN],
+        _IN_OPT_ enum AWSS_AUTH_TYPE auth,
+        _IN_OPT_ enum AWSS_ENC_TYPE encry,
+        _IN_OPT_ uint8_t bssid[ETH_ALEN],
+        _IN_OPT_ uint8_t channel) {
     return platform_awss_connect_ap(connection_timeout_ms, ssid, passwd,
-                                    auth, encry, bssid, channel);
+            auth, encry, bssid, channel);
 }
 
 #define os_wifi_scan_result_cb_t    platform_wifi_scan_result_cb_t
@@ -875,8 +841,7 @@ static inline int os_awss_connect_ap(
  * @note awss use this API send raw frame in wifi monitor mode & station mode
  */
 static inline int os_wifi_send_80211_raw_frame(_IN_ enum platform_awss_frame_type type,
-                                               _IN_ uint8_t *buffer, _IN_ int len)
-{
+        _IN_ uint8_t *buffer, _IN_ int len) {
     return platform_wifi_send_80211_raw_frame(type, buffer, len);
 }
 
@@ -912,10 +877,9 @@ static inline int os_wifi_send_80211_raw_frame(_IN_ enum platform_awss_frame_typ
  * @note awss use this API to filter specific mgnt frame in wifi station mode
  */
 static inline int os_wifi_enable_mgnt_frame_filter(
-    _IN_ uint32_t filter_mask,
-    _IN_OPT_ uint8_t vendor_oui[3],
-    _IN_ platform_wifi_mgnt_frame_cb_t callback)
-{
+            _IN_ uint32_t filter_mask,
+            _IN_OPT_ uint8_t vendor_oui[3],
+            _IN_ platform_wifi_mgnt_frame_cb_t callback) {
     return platform_wifi_enable_mgnt_frame_filter(filter_mask, vendor_oui, callback);
 }
 
@@ -954,8 +918,8 @@ static inline int os_wifi_scan(_IN_ platform_wifi_scan_result_cb_t cb)
  * @note None.
  */
 static inline p_aes128_t os_aes128_init(
-    _IN_ const uint8_t *key,
-    _IN_ const uint8_t *iv,
+    _IN_ const uint8_t* key,
+    _IN_ const uint8_t* iv,
     _IN_ AES_DIR_t dir)
 {
     return platform_aes128_init(key, iv, dir);
@@ -1097,7 +1061,7 @@ static inline int os_wifi_get_ap_info(
     return platform_wifi_get_ap_info(ssid, passwd, bssid);
 }
 
-/** @} */// end of os_awss
+	/** @} */// end of os_awss
 
 /** @defgroup group_os_product product
  *  @{
@@ -1111,10 +1075,9 @@ static inline int os_wifi_get_ap_info(
  * @see None.
  * @note None
  */
-static inline int os_product_get_name(char name_str[OS_PRODUCT_NAME_LEN])
-{
-    return product_get_name(name_str);
-}
+	static inline int os_product_get_name(char name_str[OS_PRODUCT_NAME_LEN]) {
+		return product_get_name(name_str);
+	}
 
 /**
  * @brief Get the product version string.
@@ -1124,10 +1087,9 @@ static inline int os_product_get_name(char name_str[OS_PRODUCT_NAME_LEN])
  * @see None.
  * @note
  */
-static inline int os_product_get_version(char version_str[OS_PRODUCT_VERSION_LEN])
-{
-    return product_get_version(version_str);
-}
+	static inline int os_product_get_version(char version_str[OS_PRODUCT_VERSION_LEN]) {
+		return product_get_version(version_str);
+	}
 
 /**
  * @brief Get product key string.
@@ -1137,10 +1099,9 @@ static inline int os_product_get_version(char version_str[OS_PRODUCT_VERSION_LEN
  * @see None.
  * @note None.
  */
-static inline int os_product_get_key(char key_str[OS_PRODUCT_KEY_LEN])
-{
-    return product_get_key(key_str);
-}
+	static inline int os_product_get_key(char key_str[OS_PRODUCT_KEY_LEN]) {
+		return product_get_key(key_str);
+	}
 
 /**
  * @brief Get manufacture key string.
@@ -1150,10 +1111,9 @@ static inline int os_product_get_key(char key_str[OS_PRODUCT_KEY_LEN])
  * @see None.
  * @note None.
  */
-static inline int os_manufacture_get_key(char key_str[OS_MANU_KEY_LEN])
-{
-    return product_get_manufacture_key(key_str);
-}
+	static inline int os_manufacture_get_key(char key_str[OS_MANU_KEY_LEN]) {
+		return product_get_manufacture_key(key_str);
+	}
 
 /**
  * @brief Get product secret string.
@@ -1163,10 +1123,9 @@ static inline int os_manufacture_get_key(char key_str[OS_MANU_KEY_LEN])
  * @see None.
  * @note None.
  */
-static inline int os_product_get_secret(char secret_str[OS_PRODUCT_SECRET_LEN])
-{
-    return product_get_secret(secret_str);
-}
+	static inline int os_product_get_secret(char secret_str[OS_PRODUCT_SECRET_LEN]) {
+		return product_get_secret(secret_str);
+	}
 
 /**
  * @brief Get device secret string.
@@ -1176,10 +1135,9 @@ static inline int os_product_get_secret(char secret_str[OS_PRODUCT_SECRET_LEN])
  * @see None.
  * @note None.
  */
-static inline int os_get_device_secret(char secret_str[OS_DEVICE_SECRET_LEN])
-{
-    return product_get_device_secret(secret_str);
-}
+	static inline int os_get_device_secret(char secret_str[OS_DEVICE_SECRET_LEN]) {
+		return product_get_device_secret(secret_str);
+	}
 
 /**
  * @brief Get menufacturer secret string.
@@ -1189,10 +1147,9 @@ static inline int os_get_device_secret(char secret_str[OS_DEVICE_SECRET_LEN])
  * @see None.
  * @note None.
  */
-static inline int os_get_manufacture_secret(char secret_str[OS_MANU_SECRET_LEN])
-{
-    return product_get_manufacture_secret(secret_str);
-}
+	static inline int os_get_manufacture_secret(char secret_str[OS_MANU_SECRET_LEN]) {
+		return product_get_manufacture_secret(secret_str);
+	}
 
 /**
  * @brief Get device key string.
@@ -1202,14 +1159,13 @@ static inline int os_get_manufacture_secret(char secret_str[OS_MANU_SECRET_LEN])
  * @see None.
  * @note None.
  */
-static inline int os_get_device_key(char key_str[OS_DEVICE_KEY_LEN])
-{
-    return product_get_device_key(key_str);
-}
-/** @} */// end of group_product
+	static inline int os_get_device_key(char key_str[OS_DEVICE_KEY_LEN]) {
+		return product_get_device_key(key_str);
+	}
+	/** @} */// end of group_product
 
 
-/** @} */// end of group_os
+	/** @} */// end of group_os
 
 #ifdef __cplusplus
 }

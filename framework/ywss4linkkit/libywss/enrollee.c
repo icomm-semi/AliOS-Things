@@ -198,9 +198,7 @@ static int decrypt_ssid_passwd(
     if (!g_dev_sign || memcmp(g_dev_sign, p_dev_name_sign + 1, p_dev_name_sign[0])) {
         p_dev_name_sign[p_dev_name_sign[0]] = '\0';
         awss_debug("dev_name not match, expect:");
-        if (g_dev_sign) {
-            dump_hex(g_dev_sign, p_dev_name_sign[0], 16);
-        }
+        if (g_dev_sign) dump_hex(g_dev_sign, p_dev_name_sign[0], 16);
         awss_debug("\r\nbut recv:");
         dump_hex(p_dev_name_sign + 1, p_dev_name_sign[0], 16);
         return -2;

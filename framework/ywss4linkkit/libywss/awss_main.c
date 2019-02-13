@@ -37,6 +37,7 @@
 #include "passwd.h"
 #include "utils.h"
 #include "enrollee.h"
+#include "awss.h"
 
 #if defined(__cplusplus)  /* If this is a C++ compiler, use C linkage */
 extern "C"
@@ -58,74 +59,55 @@ int __awss_start(void)
     os_printf("awss version: %s", zconfig_lib_version());
     awss_stop_connecting = 0;
     awss_finished = 0;
-#ifndef SIMULATE_NETMGR
     /* these params is useless, keep it for compatible reason */
     aws_start(NULL, NULL, NULL, NULL);
 
     ret = aws_get_ssid_passwd(&ssid[0], &passwd[0], &bssid[0],
-                              (char *)&auth, (char *)&encry, &channel);
-    if (!ret) {
-        log_warn("awss timeout!");
-    }
+            (char *)&auth, (char *)&encry, &channel);
+    if (!ret)
+	    log_warn("awss timeout!");
 
     aws_destroy();
-#else
-    os_msleep(5);
-    memcpy(ssid, NETMGR_SSID, sizeof(NETMGR_SSID));
-    memcpy(passwd, NETMGR_PW, sizeof(NETMGR_PW));
-#endif
 
     char awss_notify_needed = 1;
-    uint32_t connect_timestamp = os_get_time_ms();
-    int try_cnt = 0;
     char adha = 0;
     do {
-        if (awss_stop_connecting) {
+        if (awss_stop_connecting)
             break;
-        }
+
         if ((adha = strcmp(ssid, ADHA_SSID)) == 0 || strcmp(ssid, DEFAULT_SSID) == 0) {
-            if ((0 != os_awss_get_connect_default_ssid_timeout_interval_ms()) &&
-                (time_elapsed_ms_since(connect_timestamp) > os_awss_get_connect_default_ssid_timeout_interval_ms())) {
-                break;
-            }
             awss_notify_needed = 0;
+            awss_event_post(adha != 0 ? AWSS_CONNECT_AHA : AWSS_CONNECT_ADHA);
+        } else {
+            awss_event_post(AWSS_CONNECT_ROUTER);
         }
 
         ret = os_awss_connect_ap(WLAN_CONNECTION_TIMEOUT_MS, ssid, passwd,
                                  auth, encry, bssid, channel);
-        if (try_cnt ++ > 9999) {
-            break;
-        }
-
         if (!ret) {
             awss_debug("awss connect ssid:%s success", ssid);
+            awss_event_post(AWSS_GOT_IP);
 
             if (awss_notify_needed == 0) {
                 awss_connectap_notify_stop();
                 awss_suc_notify_stop();
                 awss_cmp_local_init();
                 awss_devinfo_notify();
+                awss_event_post(AWSS_SETUP_NOTIFY);
             } else {
                 awss_devinfo_notify_stop();
                 produce_random(aes_random, sizeof(aes_random));
             }
-            goto end;
         } else {
-            log_warn("awss connect ssid:%s passwd:%s fail", ssid, passwd);
-            if (strcmp(ssid, ADHA_SSID) == 0) {
-                break;
+            awss_debug("awss connect ssid:%s fail", ssid);
+            if (awss_notify_needed == 0) {
+                awss_event_post(adha != 0 ? AWSS_CONNECT_AHA_FAIL : AWSS_CONNECT_ADHA_FAIL);
+            } else {
+                awss_event_post(AWSS_CONNECT_ROUTER_FAIL);
             }
         }
+    } while (0);
 
-        if (1 == try_cnt) {
-            strncpy(ssid, DEFAULT_SSID, sizeof(ssid) - 1);
-            strncpy(passwd, DEFAULT_PASSWD, sizeof(passwd) - 1);
-            memset(bssid, 0, sizeof(bssid));
-            awss_notify_needed = 0;
-        }
-    } while (1);
-
-end:
     awss_finished = 1;
     /* never reach here */
     return 0;
@@ -142,9 +124,7 @@ int __awss_stop(void)
     awss_registrar_exit();
 
     while (1) {
-        if (awss_finished) {
-            break;
-        }
+        if (awss_finished) break;
         os_msleep(100);
     }
     return 0;

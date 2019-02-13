@@ -27,13 +27,15 @@
 
 #include <string.h>
 #include <stdio.h>
-#include "work_queue.h"
 #include "aws_lib.h"
 #include "zconfig_lib.h"
 #include "zconfig_utils.h"
 #include "zconfig_protocol.h"
+#include "zconfig_ieee80211.h"
 #include "enrollee.h"
 #include "awss_main.h"
+#include "awss_timer.h"
+#include "awss.h"
 #include "os.h"
 
 #if defined(__cplusplus)  /* If this is a C++ compiler, use C linkage */
@@ -86,23 +88,14 @@ static const u8 aws_fixed_scanning_channels[] = {
     1, 6, 11, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13
 };
 
+static void *rescan_timer = NULL;
+
 static void rescan_monitor();
 static void clr_aplist_monitor();
 static void aws_try_adjust_chan();
 
 #define RESCAN_MONITOR_TIMEOUT_MS     (5 * 60 * 1000)
-static struct work_struct rescan_monitor_work = {
-    .func = (work_func_t) &rescan_monitor,
-    .prio = 1, /* smaller digit means higher priority */
-    .name = "rescan",
-};
-
-#define CLR_APLIST_MONITOR_TIMEOUT_MS  (24 * 60 *60 * 1000)
-static struct work_struct clr_aplist_monitor_work = {
-    .func = (work_func_t) &clr_aplist_monitor,
-    .prio = 1, /* smaller digit means higher priority */
-    .name = "clr aplist",
-};
+#define CLR_APLIST_MONITOR_TIMEOUT_MS (24 * 60 *60 * 1000)
 static uint8_t rescan_available = 0;
 static uint8_t clr_aplist = 0;
 
@@ -129,6 +122,8 @@ void zconfig_channel_locked_callback(u8 primary_channel,
     if (aws_state == AWS_SCANNING) {
         aws_state = AWS_CHN_LOCKED;
     }
+
+    awss_event_post(AWSS_LOCK_CHAN);
 }
 
 void zconfig_got_ssid_passwd_callback(u8 *ssid, u8 *passwd,
@@ -161,6 +156,8 @@ void zconfig_got_ssid_passwd_callback(u8 *ssid, u8 *passwd,
     aws_result_channel = channel;
 
     aws_state = AWS_SUCCESS;
+
+    awss_event_post(AWSS_GOT_SSID_PASSWD);
 }
 
 u8 aws_next_channel(void)
@@ -467,11 +464,14 @@ timeout_scanning:
     awss_debug("aws timeout scanning!\r\n");
 timeout_recving:
     awss_debug("aws timeout recving!\r\n");
-    cancel_work(&rescan_monitor_work);
-    queue_delayed_work(&rescan_monitor_work, RESCAN_MONITOR_TIMEOUT_MS);
+    if (rescan_timer == NULL) {
+        rescan_timer = HAL_Timer_Create("rescan", (void(*)(void *))rescan_monitor, NULL);
+    }
+    HAL_Timer_Stop(rescan_timer);
+    HAL_Timer_Start(rescan_timer, RESCAN_MONITOR_TIMEOUT_MS);
     while (rescan_available == 0) {
         if (zconfig_get_press_status()) {
-            cancel_work(&rescan_monitor_work);
+            HAL_Timer_Stop(rescan_timer);
             break;
         }
         os_msleep(200);
@@ -489,6 +489,8 @@ timeout_recving:
     goto rescanning;
 
 success:
+    awss_stop_timer(rescan_timer);
+    rescan_timer = NULL;
     /*
      * zconfig_destroy() after os_awss_monitor_close() beacause
      * zconfig_destroy will release mem/buffer that
@@ -513,7 +515,7 @@ static void rescan_monitor()
 static void clr_aplist_monitor()
 {
     clr_aplist = 1;
-    queue_delayed_work(&clr_aplist_monitor_work, CLR_APLIST_MONITOR_TIMEOUT_MS);
+    HAL_Timer_Start(clr_aplist_timer, CLR_APLIST_MONITOR_TIMEOUT_MS);
 }
 
 int aws_80211_frame_handler(char *buf, int length, enum AWSS_LINK_TYPE link_type, int with_fcs, signed char rssi)
@@ -565,8 +567,11 @@ void aws_start(char *pk, char *dn, char *ds, char *ps)
 
     zconfig_init();
 
-    cancel_work(&clr_aplist_monitor_work);
-    queue_delayed_work(&clr_aplist_monitor_work, CLR_APLIST_MONITOR_TIMEOUT_MS);
+    if (clr_aplist_timer == NULL) {
+        clr_aplist_timer = HAL_Timer_Create("clr_aplist", (void (*)(void *))clr_aplist_monitor, (void *)NULL);
+    }
+    HAL_Timer_Stop(clr_aplist_timer);
+    HAL_Timer_Start(clr_aplist_timer, CLR_APLIST_MONITOR_TIMEOUT_MS);
 
     os_awss_open_monitor(aws_80211_frame_handler);
 
