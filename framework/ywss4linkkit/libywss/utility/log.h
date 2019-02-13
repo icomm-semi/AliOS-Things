@@ -29,7 +29,7 @@
 #define LOG_H
 #include <stdio.h>
 #include "os.h"
-#include "lite-log.h"
+//#include "lite-log.h"
 extern unsigned int log_level;
 static inline unsigned int log_get_level(void)
 {
@@ -68,7 +68,6 @@ enum LOGLEVEL_BIT {
  * color def.
  * see http://stackoverflow.com/questions/3585846/color-text-in-terminal-applications-in-unix
  */
-/*
 #define COL_DEF "\x1B[0m"   //white
 #define COL_RED "\x1B[31m"  //red
 #define COL_GRE "\x1B[32m"  //green
@@ -87,6 +86,13 @@ do {\
     }\
 }while(0)
 
+#undef log_fatal
+#undef log_error
+#undef log_warn
+#undef log_info
+#undef log_debug
+#undef log_trace
+
 #define log_fatal(FMT, ...) \
     log_print(LOG_LEVEL & LL_FATAL, "iLop", COL_RED, "FATAL", FMT, ##__VA_ARGS__)
 #define log_error(FMT, ...) \
@@ -99,7 +105,5 @@ do {\
     log_print(LOG_LEVEL & LL_DEBUG, "iLop", COL_WHE, "DEBUG", FMT, ##__VA_ARGS__)
 #define log_trace(FMT, ...) \
     log_print(LOG_LEVEL & LL_TRACE, "iLop", COL_CYN, "TRACE", FMT, ##__VA_ARGS__)
-
-*/
 
 #endif

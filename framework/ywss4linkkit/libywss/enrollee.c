@@ -80,13 +80,13 @@ void awss_init_enrollee_info(void)// void enrollee_raw_frame_init(void)
         return;
     }
 
-    dev_name = os_zalloc(OS_PRODUCT_NAME_LEN + 1);
+    dev_name = os_zalloc(OS_DEVICE_NAME_LEN + 1);
     pk = os_zalloc(OS_PRODUCT_KEY_LEN + 1);
 
     os_product_get_key(pk);
     pk_len = strlen(pk);
 
-    os_product_get_name(dev_name);
+    os_device_get_name(dev_name);
     dev_name_len = strlen(dev_name);
 
     len = RANDOM_MAX_LEN + dev_name_len + pk_len;
@@ -96,7 +96,7 @@ void awss_init_enrollee_info(void)// void enrollee_raw_frame_init(void)
     if (os_get_conn_encrypt_type() == 3) { // aes-key per product
         os_product_get_secret(key);
     } else { // aes-key per device
-        os_get_device_secret(key);
+        os_device_get_secret(key);
     }
     produce_signature(sign, (uint8_t *)text, len, key);
 

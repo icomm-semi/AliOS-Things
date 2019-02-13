@@ -103,7 +103,6 @@ int linkkit_ntp_time_reply(char *topic, int topic_len, void *payload, int payloa
     if (tx > 999999999) {
         tx = 999999999;
     }
-
     if (len > 9)
         sprintf(elem, "%09u", (unsigned int)tx);
     else

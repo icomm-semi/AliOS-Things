@@ -1,35 +1,17 @@
 NAME := coapapp
+$(NAME)_SOURCES := app_entry.c \
+    			coap-example.c
 
-$(NAME)_SOURCES     := coapapp.c
-GLOBAL_DEFINES      += ALIOT_DEBUG
+$(NAME)_COMPONENTS += framework/protocol/linkkit/sdk \
+    				framework/protocol/linkkit/hal \
+					framework/netmgr \
+					framework/common \
+					utility/cjson \
+					tools/cli 
 
-CONFIG_COAP_DTLS_SUPPORT := y
-CONFIG_COAP_ONLINE := y
+GLOBAL_DEFINES += CONFIG_AOS_CLI
 
-ifeq ($(CONFIG_COAP_DTLS_SUPPORT), y)
-$(NAME)_DEFINES += COAP_DTLS_SUPPORT
+ifeq ($(LWIP),1)
+$(NAME)_COMPONENTS  += protocols.net
+no_with_lwip := 0
 endif
-ifeq ($(CONFIG_COAP_ONLINE), y)
-$(NAME)_DEFINES += COAP_ONLINE
-endif
-
-ifneq ($(FOTA_DL_COAP),)
-GLOBAL_DEFINES      += FOTA_DOWNLOAD_COAP
-endif
-
-$(NAME)_COMPONENTS  := cli
-#ifeq ($(LWIP),1)
-#$(NAME)_COMPONENTS  += protocols.net
-#endif
-
-ifneq ($(findstring linuxhost, $(BUILD_STRING)), linuxhost)
-$(NAME)_DEFINES += PLATFORM_NOT_LINUX
-endif
-
-$(NAME)_CFLAGS += \
-    -Wno-unused-function \
-    -Wno-implicit-function-declaration \
-    -Wno-unused-function \
-#    -Werror
-
-$(NAME)_COMPONENTS  += connectivity.coap  netmgr fota framework.common

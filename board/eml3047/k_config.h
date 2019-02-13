@@ -15,10 +15,10 @@
 
 /* kernel feature conf */
 #ifndef RHINO_CONFIG_SEM
-#define RHINO_CONFIG_SEM                     1
+#define RHINO_CONFIG_SEM                     0
 #endif
 #ifndef RHINO_CONFIG_QUEUE
-#define RHINO_CONFIG_QUEUE                   1
+#define RHINO_CONFIG_QUEUE                   0
 #endif
 #ifndef RHINO_CONFIG_TASK_SEM
 #define RHINO_CONFIG_TASK_SEM                0
@@ -33,14 +33,14 @@
 #define RHINO_CONFIG_BUF_QUEUE               0
 #endif
 #ifndef RHINO_CONFIG_MM_BLK
-#define RHINO_CONFIG_MM_BLK                  1
+#define RHINO_CONFIG_MM_BLK                  0
 #endif
 #ifndef RHINO_CONFIG_MM_DEBUG
 #define RHINO_CONFIG_MM_DEBUG                0
 #endif
 
 #ifndef RHINO_CONFIG_MM_TLF
-#define RHINO_CONFIG_MM_TLF                  1
+#define RHINO_CONFIG_MM_TLF                  0
 #endif
 #ifndef RHINO_CONFIG_MM_TLF_BLK_SIZE
 #define RHINO_CONFIG_MM_TLF_BLK_SIZE         1024
@@ -71,7 +71,7 @@
 #define RHINO_CONFIG_TASK_INFO               0
 #endif
 #ifndef RHINO_CONFIG_TASK_DEL
-#define RHINO_CONFIG_TASK_DEL                1
+#define RHINO_CONFIG_TASK_DEL                0
 #endif
 
 #ifndef RHINO_CONFIG_TASK_STACK_CUR_CHECK
@@ -91,7 +91,7 @@
 #define RHINO_CONFIG_TIME_SLICE_DEFAULT      50
 #endif
 #ifndef RHINO_CONFIG_PRI_MAX
-#define RHINO_CONFIG_PRI_MAX                 62
+#define RHINO_CONFIG_PRI_MAX                 5
 #endif
 #ifndef RHINO_CONFIG_USER_PRI_MAX
 #define RHINO_CONFIG_USER_PRI_MAX            (RHINO_CONFIG_PRI_MAX - 2)
@@ -146,7 +146,7 @@
 #define RHINO_CONFIG_TIMER_RATE              1
 #endif
 #ifndef RHINO_CONFIG_TIMER_TASK_PRI
-#define RHINO_CONFIG_TIMER_TASK_PRI          5
+#define RHINO_CONFIG_TIMER_TASK_PRI          13
 #endif
 
 /* kernel intrpt conf */
@@ -165,7 +165,7 @@
 
 /* kernel dyn alloc conf */
 #ifndef RHINO_CONFIG_KOBJ_DYN_ALLOC
-#define RHINO_CONFIG_KOBJ_DYN_ALLOC          1
+#define RHINO_CONFIG_KOBJ_DYN_ALLOC          0
 #endif
 
 #if (RHINO_CONFIG_KOBJ_DYN_ALLOC > 0)
@@ -182,7 +182,7 @@
 
 /* kernel idle conf */
 #ifndef RHINO_CONFIG_IDLE_TASK_STACK_SIZE
-#define RHINO_CONFIG_IDLE_TASK_STACK_SIZE    100
+#define RHINO_CONFIG_IDLE_TASK_STACK_SIZE    20
 #endif
 
 /* kernel hook conf */
@@ -217,9 +217,12 @@
 #define RHINO_CONFIG_CPU_NUM                 1
 #endif
 
-/* kernel trace conf */
-#ifndef RHINO_CONFIG_TRACE
-#define RHINO_CONFIG_TRACE                   0
+#ifndef RHINO_CONFIG_PANIC
+#define RHINO_CONFIG_PANIC                   0
+#endif
+
+#ifndef RHINO_CONFIG_BACKTRACE
+#define RHINO_CONFIG_BACKTRACE               0
 #endif
 
 #endif /* CONFIG_H */

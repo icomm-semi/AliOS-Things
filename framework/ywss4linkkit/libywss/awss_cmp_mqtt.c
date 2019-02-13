@@ -28,6 +28,8 @@
 #include <stdio.h>
 #include "os.h"
 #include "mqtt_instance.h"
+#include "iot_import.h"
+#include "iot_export.h"
 #include "awss_cmp.h"
 #include "awss_notify.h"
 #include "ntp.h"
@@ -81,13 +83,13 @@ int awss_cmp_online_init()
     int i;
 #ifdef AWSS_INIT_CMP
     {
-        char pk[PRODUCT_KEY_LEN + 1] = {0};
-        char dn[PRODUCT_NAME_LEN + 1] = {0};
+        char pk[OS_PRODUCT_KEY_LEN + 1] = {0};
+        char dn[OS_DEVICE_NAME_LEN + 1] = {0};
         char ds[OS_DEVICE_SECRET_LEN + 1] = {0};
 
         os_product_get_key(pk);
-        os_product_get_name(dn);
-        os_get_device_secret(ds);
+        os_device_get_name(dn);
+        os_device_get_secret(ds);
         mqtt_init_instance(pk, dn, ds, 1024);
     }
 #endif

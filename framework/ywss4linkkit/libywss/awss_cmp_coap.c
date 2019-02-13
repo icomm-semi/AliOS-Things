@@ -27,11 +27,14 @@
 
 #include <stdio.h>
 #include "os.h"
+#include "iot_import.h"
+#include "iot_export.h"
 #include "CoAPExport.h"
 #include "CoAPServer.h"
 #include "awss_cmp.h"
 #include "awss_wifimgr.h"
 #include "awss_notify.h"
+#include "awss_main.h"
 
 #if defined(__cplusplus)  /* If this is a C++ compiler, use C linkage */
 extern "C"
@@ -111,7 +114,7 @@ char *awss_cmp_get_coap_payload(void *request, int *payload_len)
 int awss_cmp_coap_register_cb(char *topic, void* cb)
 {
     if (g_coap_ctx == NULL)
-        g_coap_ctx = CoAPServer_init();
+        g_coap_ctx = (void *)CoAPServer_init();
 
     if (g_coap_ctx == NULL)
         return -1;
@@ -124,18 +127,18 @@ int awss_cmp_coap_register_cb(char *topic, void* cb)
 
 int awss_cmp_coap_loop(void *param)
 {
-    if (g_coap_ctx == NULL) g_coap_ctx = CoAPServer_init();
-#ifndef HAL_ASYNC_API
-    awss_debug("create thread\r\n");
-    CoAPServer_loop(g_coap_ctx);
-#endif
+    if (g_coap_ctx == NULL) g_coap_ctx = (void *)CoAPServer_init();
+// #ifndef HAL_ASYNC_API
+//     awss_debug("create thread\r\n");
+//     CoAPServer_loop(g_coap_ctx);
+// #endif
     return 0;
 }
 
 int awss_cmp_coap_send(void *buf, unsigned int len, void *sa, const char *uri, void *cb, unsigned short *msgid)
 {
     if (g_coap_ctx == NULL) {
-        g_coap_ctx = CoAPServer_init();
+        g_coap_ctx = (void *)CoAPServer_init();
     } else {
         CoAPMessageId_cancel(g_coap_ctx, *msgid);
     }
@@ -145,14 +148,14 @@ int awss_cmp_coap_send(void *buf, unsigned int len, void *sa, const char *uri, v
 
 int awss_cmp_coap_send_resp(void *buf, unsigned int len, void *sa, const char *uri, void *req)
 {
-    if (g_coap_ctx == NULL) g_coap_ctx = CoAPServer_init();
+    if (g_coap_ctx == NULL) g_coap_ctx = (void *)CoAPServer_init();
 
     return CoAPServerResp_send(g_coap_ctx, (NetworkAddr *)sa, (unsigned char *)buf, (unsigned short)len, req, uri);
 }
 
 int awss_cmp_coap_ob_send(void *buf, unsigned int len, void *sa, const char *uri, void *cb)
 {
-    if (g_coap_ctx == NULL) g_coap_ctx = CoAPServer_init();
+    if (g_coap_ctx == NULL) g_coap_ctx = (void *)CoAPServer_init();
 
     return CoAPObsServer_notify(g_coap_ctx, uri, (unsigned char *)buf, (unsigned short)len, cb);
 }

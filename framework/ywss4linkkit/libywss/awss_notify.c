@@ -26,12 +26,13 @@
  */
 
 #include <stdlib.h>
+#include <stdbool.h>
 #include "os.h"
 #include "enrollee.h"
 #include "utils.h"
 #include "zconfig_utils.h"
 #include "passwd.h"
-#include "platform/platform.h"
+#include "platform.h"
 #include "awss_notify.h"
 #include "json_parser.h"
 #include "awss_cmp.h"
@@ -85,6 +86,8 @@ extern "C"
     int               awss_connectap_notify();
     int               awss_devinfo_notify();
     int               awss_suc_notify();
+
+    static bool       awss_notify_running = false;
 
     static const struct notify_map_t notify_map[] = {
         { AWSS_NOTIFY_DEV_TOKEN, METHOD_DEV_INFO_NOTIFY, TOPIC_NOTIFY,
@@ -243,12 +246,14 @@ extern "C"
 
 #define AWSS_NOTIFY_CNT_MAX (30)
 
-    int awss_connectap_notify_stop()
+    static char connectap_cnt = 0;
+    int         awss_connectap_notify_stop()
     {
         if (connectap_notify_timer == NULL)
             return 0;
         awss_stop_timer(connectap_notify_timer);
         connectap_notify_timer = NULL;
+        connectap_cnt          = AWSS_NOTIFY_CNT_MAX;
         return 0;
     }
 
@@ -331,6 +336,11 @@ extern "C"
         return -1;
     }
 
+    bool get_awss_notify_running_flag(void)
+    {
+        return awss_notify_running;
+    }
+
     static int online_get_device_info(void *ctx, void *resource, void *remote,
                                       void *request, char is_mcast)
     {
@@ -384,8 +394,7 @@ extern "C"
 
     int awss_connectap_notify()
     {
-        static int  connectap_interval = 0;
-        static char connectap_cnt      = 0;
+        static int connectap_interval = 0;
 
         /*
          * wait for token is sent to cloud and rx reply from cloud
@@ -420,6 +429,7 @@ extern "C"
             awss_notify_dev_info(AWSS_NOTIFY_DEV_TOKEN, 1);
 
             connectap_interval += 100;
+            awss_notify_running = true;
             if (connectap_cnt++ < AWSS_NOTIFY_CNT_MAX &&
                 awss_notify_resp[AWSS_NOTIFY_DEV_TOKEN] == 0) {
                 if (connectap_notify_timer == NULL)
@@ -435,6 +445,7 @@ extern "C"
         awss_notify_resp[AWSS_NOTIFY_DEV_TOKEN] = 0;
         connectap_interval                      = 0;
         connectap_cnt                           = 0;
+        awss_notify_running                     = false;
         if (connectap_notify_timer) {
             awss_stop_timer(connectap_notify_timer);
             connectap_notify_timer = NULL;

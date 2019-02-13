@@ -32,7 +32,7 @@ extern "C" {
 #endif
 
 #include "os.h"
-#include "lite-utils.h"
+#include "iotx_utils.h"
 
 /**
  * @brief string to hex

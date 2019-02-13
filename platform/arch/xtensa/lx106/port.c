@@ -10,46 +10,48 @@
 #include "c_types.h"
 #include "ets_sys.h"
 
+#define BACK_TRACE_LIMIT 50
+
 extern int ets_printf(const char *fmt, ...);
 
 #undef XT_RTOS_INT_EXIT
 #define XT_RTOS_INT_EXIT _xt_int_exit
 
-#define XT_STK_EXIT             0x00    /* (offset 0) exit point for dispatch */
-#define XT_STK_PC               0x04    /* return address */
-#define XT_STK_PS               0x08    /* at level 1 PS.EXCM is set here */
-#define XT_STK_A0               0x0C
-#define XT_STK_A1               0x10    /* stack ptr before interrupt */
-#define XT_STK_A2               0x14
-#define XT_STK_A3               0x18
-#define XT_STK_A4               0x1C
-#define XT_STK_A5               0x20
-#define XT_STK_A6               0x24
-#define XT_STK_A7               0x28
-#define XT_STK_A8               0x2C
-#define XT_STK_A9               0x30
-#define XT_STK_A10              0x34
-#define XT_STK_A11              0x38
-#define XT_STK_A12              0x3C    /* Call0 callee-save */
-#define XT_STK_A13              0x40    /* Call0 callee-save */
-#define XT_STK_A14              0x44    /* Call0 callee-save */
-#define XT_STK_A15              0x48    /* Call0 callee-save */
-#define XT_STK_SAR              0x4C
+#define XT_STK_EXIT 0x00 /* (offset 0) exit point for dispatch */
+#define XT_STK_PC   0x04 /* return address */
+#define XT_STK_PS   0x08 /* at level 1 PS.EXCM is set here */
+#define XT_STK_A0   0x0C
+#define XT_STK_A1   0x10 /* stack ptr before interrupt */
+#define XT_STK_A2   0x14
+#define XT_STK_A3   0x18
+#define XT_STK_A4   0x1C
+#define XT_STK_A5   0x20
+#define XT_STK_A6   0x24
+#define XT_STK_A7   0x28
+#define XT_STK_A8   0x2C
+#define XT_STK_A9   0x30
+#define XT_STK_A10  0x34
+#define XT_STK_A11  0x38
+#define XT_STK_A12  0x3C /* Call0 callee-save */
+#define XT_STK_A13  0x40 /* Call0 callee-save */
+#define XT_STK_A14  0x44 /* Call0 callee-save */
+#define XT_STK_A15  0x48 /* Call0 callee-save */
+#define XT_STK_SAR  0x4C
 
 extern char NMIIrqIsOn;
-static char HdlMacSig = 0;
-static char SWReq = 0;
+static char HdlMacSig      = 0;
+static char SWReq          = 0;
 static char PendSvIsPosted = 0;
 
-unsigned cpu_sr;
+unsigned          cpu_sr;
 volatile uint32_t g_nmilock_cnt;
 
 /* Each task maintains its own interrupt status in the critical nesting
 variable. */
 static unsigned int uxCriticalNesting = 0;
 
-void vPortEnterCritical( void );
-void vPortExitCritical( void );
+void vPortEnterCritical(void);
+void vPortExitCritical(void);
 void debug_stack(int *p);
 
 extern void _xt_user_exit(void);
@@ -58,47 +60,54 @@ extern void _xt_user_exit(void);
  * See header file for description.
  */
 // int *
-void *cpu_task_stack_init(cpu_stack_t *stack_base, size_t stack_size,
-                          void *arg, task_entry_t entry)
+void *cpu_task_stack_init(cpu_stack_t *stack_base, size_t stack_size, void *arg,
+                          task_entry_t entry)
 {
-#define SET_STKREG(r,v) sp[(r) >> 2] = (int)(v)
+#define SET_STKREG(r, v) sp[(r) >> 2] = (int)(v)
     int *sp, *tp;
     int *pxTopOfStack = (int *)(stack_base + stack_size - 1);
 
     /* Create interrupt stack frame aligned to 16 byte boundary */
-    sp = (int *) (((int32_t)(pxTopOfStack + 1) - XT_CP_SIZE - XT_STK_FRMSZ) & ~0xf);
+    sp =
+      (int *)(((int32_t)(pxTopOfStack + 1) - XT_CP_SIZE - XT_STK_FRMSZ) & ~0xf);
 
-    /* Clear the entire frame (do not use memset() because we don't depend on C library) */
+    /* Clear the entire frame (do not use memset() because we don't depend on C
+     * library) */
     for (tp = sp; tp <= pxTopOfStack; ++tp) {
         *tp = 0;
     }
 
     /* Explicitly initialize certain saved registers */
-    SET_STKREG( XT_STK_PC,    entry                 );  /* task entrypoint                  */
-    SET_STKREG( XT_STK_A0,    krhino_task_deathbed  );  /* to terminate GDB backtrace       */
-    SET_STKREG( XT_STK_A1,    (int32_t)sp + XT_STK_FRMSZ );  /* physical top of stack frame      */
-    SET_STKREG( XT_STK_A2,    arg                   );  /* parameters                       */
-    SET_STKREG( XT_STK_EXIT,  _xt_user_exit         );  /* user exception exit dispatcher   */
+    SET_STKREG(XT_STK_PC, entry); /* task entrypoint                  */
+    SET_STKREG(XT_STK_A0,
+               krhino_task_deathbed); /* to terminate GDB backtrace       */
+    SET_STKREG(XT_STK_A1,
+               (int32_t)sp + XT_STK_FRMSZ); /* physical top of stack frame */
+    SET_STKREG(XT_STK_A2, arg); /* parameters                       */
+    SET_STKREG(XT_STK_EXIT,
+               _xt_user_exit); /* user exception exit dispatcher   */
 
-    /* Set initial PS to int level 0, EXCM disabled ('rfe' will enable), user mode. */
+    /* Set initial PS to int level 0, EXCM disabled ('rfe' will enable), user
+     * mode. */
 #ifdef __XTENSA_CALL0_ABI__
-    SET_STKREG( XT_STK_PS,    PS_UM | PS_EXCM       );
+    SET_STKREG(XT_STK_PS, PS_UM | PS_EXCM);
 #else
-    /* + for windowed ABI also set WOE and CALLINC (pretend task was 'call4'd). */
-    SET_STKREG( XT_STK_PS,    PS_UM | PS_EXCM | PS_WOE | PS_CALLINC(1) );
+    /* + for windowed ABI also set WOE and CALLINC (pretend task was 'call4'd).
+     */
+    SET_STKREG(XT_STK_PS, PS_UM | PS_EXCM | PS_WOE | PS_CALLINC(1));
 #endif
 
     return sp;
 }
 
-void PendSV( char req )
+void PendSV(char req)
 {
     char tmp = 0;
-    //ETS_INTR_LOCK();
+    // ETS_INTR_LOCK();
 
-    if ( NMIIrqIsOn == 0 ) {
+    if (NMIIrqIsOn == 0) {
         vPortEnterCritical();
-        //PortDisableInt_NoNest();
+        // PortDisableInt_NoNest();
         tmp = 1;
     }
 
@@ -134,13 +143,13 @@ void SoftIsrHdl(void *arg)
 {
     extern int MacIsrSigPostDefHdl(void);
 
-    PendSvIsPosted = 0;
-    int xHigherPriorityTaskWoken = false ;
+    PendSvIsPosted               = 0;
+    int xHigherPriorityTaskWoken = false;
     if (HdlMacSig == 1) {
         xHigherPriorityTaskWoken = MacIsrSigPostDefHdl();
-        HdlMacSig = 0;
+        HdlMacSig                = 0;
     }
-    if ( xHigherPriorityTaskWoken || (SWReq == 1)) {
+    if (xHigherPriorityTaskWoken || (SWReq == 1)) {
         _xt_timer_int1();
         SWReq = 0;
     }
@@ -151,7 +160,7 @@ void vTaskSwitchContext(void)
     g_active_task[cpu_cur_get()] = g_preferred_ready_task[cpu_cur_get()];
 }
 
-void xPortSysTickHandle (void)
+void xPortSysTickHandle(void)
 {
     krhino_intrpt_enter();
     krhino_tick_proc();
@@ -161,10 +170,10 @@ void xPortSysTickHandle (void)
 /*
  * See header file for description.
  */
-void cpu_first_task_start( void )
+void cpu_first_task_start(void)
 {
-    //set pendsv and systemtick as lowest priority ISR.
-    //pendsv setting
+    // set pendsv and systemtick as lowest priority ISR.
+    // pendsv setting
 
     /*******software isr*********/
     _xt_isr_attach(ETS_SOFT_INUM, SoftIsrHdl, NULL);
@@ -183,7 +192,7 @@ void cpu_first_task_start( void )
     /* Should not get here as the tasks are now running! */
 }
 
-void vPortEndScheduler( void )
+void vPortEndScheduler(void)
 {
     /* It is unlikely that the CM3 port will require this function as there
     is nothing to return to.  */
@@ -195,14 +204,14 @@ void vPortEndScheduler( void )
 
 static char ClosedLv1Isr = 0;
 
-void vPortEnterCritical( void )
+void vPortEnterCritical(void)
 {
     if (NMIIrqIsOn == 0) {
         _espos_enter_critical(NULL);
     }
 }
 
-void vPortExitCritical( void )
+void vPortExitCritical(void)
 {
     if (NMIIrqIsOn == 0) {
         _espos_exit_critical(NULL, 0);
@@ -219,63 +228,63 @@ extern uint32 WDEV_INTEREST_EVENT;
 #define INT_ENA_WDEV        0x3ff20c18
 #define WDEV_TSF0_REACH_INT (BIT(27))
 
-#define ETS_INTR_LOCK_() do {       \
-        if (NMIIrqIsOn == 0) {      \
-            if ( g_nmilock_cnt == 0 )    \
-            {                       \
-                _espos_enter_critical(NULL);    \
-                __asm__ __volatile__("rsync":::"memory");       \
-                REG_WRITE(INT_ENA_WDEV, 0); \
-                __asm__ __volatile__("rsync":::"memory");       \
-                REG_WRITE(INT_ENA_WDEV, WDEV_TSF0_REACH_INT);   \
-                __asm__ __volatile__("rsync":::"memory");       \
-            }                           \
-            g_nmilock_cnt++;            \
-        }   \
-    } while(0)
+#define ETS_INTR_LOCK_()                                      \
+    do {                                                      \
+        if (NMIIrqIsOn == 0) {                                \
+            if (g_nmilock_cnt == 0) {                         \
+                _espos_enter_critical(NULL);                  \
+                __asm__ __volatile__("rsync" ::: "memory");   \
+                REG_WRITE(INT_ENA_WDEV, 0);                   \
+                __asm__ __volatile__("rsync" ::: "memory");   \
+                REG_WRITE(INT_ENA_WDEV, WDEV_TSF0_REACH_INT); \
+                __asm__ __volatile__("rsync" ::: "memory");   \
+            }                                                 \
+            g_nmilock_cnt++;                                  \
+        }                                                     \
+    } while (0)
 
-#define ETS_INTR_UNLOCK_()   do {   \
-        if (NMIIrqIsOn == 0) {      \
-            if (g_nmilock_cnt > 0) {g_nmilock_cnt--;}       \
-            if  ( g_nmilock_cnt == 0 )  \
-            {                           \
-                __asm__ __volatile__("rsync":::"memory");       \
-                REG_WRITE(INT_ENA_WDEV, WDEV_INTEREST_EVENT);   \
-                __asm__ __volatile__("rsync":::"memory");       \
-                _espos_exit_critical(NULL, 0);                  \
-            }                           \
-        }   \
-    } while(0)
+#define ETS_INTR_UNLOCK_()                                    \
+    do {                                                      \
+        if (NMIIrqIsOn == 0) {                                \
+            if (g_nmilock_cnt > 0) {                          \
+                g_nmilock_cnt--;                              \
+            }                                                 \
+            if (g_nmilock_cnt == 0) {                         \
+                __asm__ __volatile__("rsync" ::: "memory");   \
+                REG_WRITE(INT_ENA_WDEV, WDEV_INTEREST_EVENT); \
+                __asm__ __volatile__("rsync" ::: "memory");   \
+                _espos_exit_critical(NULL, 0);                \
+            }                                                 \
+        }                                                     \
+    } while (0)
 
-void vPortETSIntrLock( void )
+void vPortETSIntrLock(void)
 {
     ETS_INTR_LOCK_();
 }
 
-void vPortETSIntrUnlock( void )
+void vPortETSIntrUnlock(void)
 {
     ETS_INTR_UNLOCK_();
 }
 
-void
-PortDisableInt_NoNest( void )
+void PortDisableInt_NoNest(void)
 {
     //  printf("ERRRRRRR\n");
     if (NMIIrqIsOn == 0) {
-        if ( ClosedLv1Isr != 1 ) {
+        if (ClosedLv1Isr != 1) {
             portDISABLE_INTERRUPTS();
             ClosedLv1Isr = 1;
         }
     }
 }
 
-void
-PortEnableInt_NoNest( void )
+void PortEnableInt_NoNest(void)
 {
     //  printf("ERRRRR\n");
 
     if (NMIIrqIsOn == 0) {
-        if ( ClosedLv1Isr == 1 ) {
+        if (ClosedLv1Isr == 1) {
             ClosedLv1Isr = 0;
             portENABLE_INTERRUPTS();
         }
@@ -283,19 +292,19 @@ PortEnableInt_NoNest( void )
 }
 
 /*-----------------------------------------------------------*/
-void  ResetCcountVal( unsigned int cnt_val )
+void ResetCcountVal(unsigned int cnt_val)
 {
     //  XT_WSR_CCOUNT(cnt_val);
     asm volatile("wsr a2, ccount");
 }
 
 _xt_isr_entry isr[16];
-char _xt_isr_status = 0;
+char          _xt_isr_status = 0;
 
 void _xt_isr_attach(uint8_t i, _xt_isr func, void *arg)
 {
     isr[i].handler = func;
-    isr[i].arg = arg;
+    isr[i].arg     = arg;
 }
 
 uint16_t _xt_isr_handler(uint16_t i)
@@ -333,34 +342,32 @@ uint16_t _xt_isr_handler(uint16_t i)
 }
 
 uint32_t g_double_exc;
-char g_panic_info[]  =
-    "PC       0x         \n"
-    "PS       0x         \n"
-    "A0       0x         \n"
-    "A1       0x         \n"
-    "A2       0x         \n"
-    "A3       0x         \n"
-    "A4       0x         \n"
-    "A5       0x         \n"
-    "A6       0x         \n"
-    "A7       0x         \n"
-    "A8       0x         \n"
-    "A9       0x         \n"
-    "A10      0x         \n"
-    "A11      0x         \n"
-    "A12      0x         \n"
-    "A13      0x         \n"
-    "A14      0x         \n"
-    "A15      0x         \n"
-    "SAR      0x         \n"
-    "EXCCAUSE 0x         \n"
-    "EXCVADDR 0x         \n"
-    ;
-char g_panic_stack[]  =
-    "stack(0x        ): 0x         0x         0x         0x         \n";
+char     g_panic_info[] = "PC       0x        \n"
+                      "PS       0x        \n"
+                      "A0       0x        \n"
+                      "A1       0x        \n"
+                      "A2       0x        \n"
+                      "A3       0x        \n"
+                      "A4       0x        \n"
+                      "A5       0x        \n"
+                      "A6       0x        \n"
+                      "A7       0x        \n"
+                      "A8       0x        \n"
+                      "A9       0x        \n"
+                      "A10      0x        \n"
+                      "A11      0x        \n"
+                      "A12      0x        \n"
+                      "A13      0x        \n"
+                      "A14      0x        \n"
+                      "A15      0x        \n"
+                      "SAR      0x        \n"
+                      "EXCCAUSE 0x        \n"
+                      "EXCVADDR 0x        \n";
+char g_panic_stack[] =
+  "stack(0x        ): 0x         0x         0x         0x         \n";
 
-char g_panic_call[]  =
-    "backtrace : 0x         \n";
+char g_panic_call[] = "backtrace : 0x        \n";
+
 /* itoa, int to ascii */
 char *int_to_hex(int num, char *str)
 {
@@ -394,9 +401,11 @@ extern char _irom0_text_end[];
 /* check if pc is valid, return 0 when illegel, other is offset */
 static int panicCheckPcValid(char *pc)
 {
-    if ((unsigned int)(pc - _text_start) < (unsigned int)(_text_end - _text_start)) {
+    if ((unsigned int)(pc - _text_start) <
+        (unsigned int)(_text_end - _text_start)) {
         return pc - _text_start;
-    } else if ((unsigned int)(pc - _irom0_text_start) < (unsigned int)(_irom0_text_end - _irom0_text_start)) {
+    } else if ((unsigned int)(pc - _irom0_text_start) <
+               (unsigned int)(_irom0_text_end - _irom0_text_start)) {
         return pc - _irom0_text_start;
     } else {
         return 0;
@@ -404,47 +413,62 @@ static int panicCheckPcValid(char *pc)
 }
 
 /* find current function caller, update PC and SP */
-static int panicFindRetAddr_callee(int  **pSP, char **pPC, char *RA)
+static int panicFindRetAddr_callee(int **pSP, char **pPC, char *RA)
 {
     int  *SP = *pSP;
     char *PC = *pPC;
-    int  lmt, i, j;
-    signed char framesize = 0;
+    int   lmt, i, j;
+    int   framesize = 0;
 
     /* stack use for callee function:
-       1. "addi a1, a1, -N" to open stack frame, and "s32i a0, a1, N-4" to push RA
-       2. "addi a1, a1, -N" to open stack frame, and do not push RA
-       3. do not open frame, and do not push RA
+       1. "addi a1, a1, -N" to open stack frame, and "s32i a0, a1, N-4" to push
+       RA
+       2. "movi a9, N; sub a1, a1, a9" to open stack frame, N is a multiplier of
+       16 binary code: "92 aN NN" "90 11 c0"
+       3. "addi a1, a1, -N" to open stack frame, and do not push RA
+       4. do not open frame, and do not push RA
        */
 
     lmt = panicCheckPcValid(PC);
-    for ( i = 0 ; i < lmt ; i++ ) {
+    for (i = 0; i < lmt; i++) {
         /* find nearest "addi a1, a1, -N" */
-        if ( *(PC - i) == 0x12 && *(PC - i + 1) == 0xc1 && (*(PC - i + 2)) % 16 == 0) {
-            framesize = *(PC - i + 2);
+        if (*(PC - i) == 0x12 && *(PC - i + 1) == 0xc1 &&
+            (*(PC - i + 2)) % 16 == 0) {
+            framesize = (int)(*(signed char *)(PC - i + 2));
             framesize /= -4;
             break;
         }
-    }
-    if ( framesize == 0 ) {
-        return 0;
-    }
-
-    if ( PC - RA > 0 && PC - RA < i ) {
-        /* RA has changed in func, so find stack to get ReturnAddr */
-        *pSP = SP + framesize;
-        *pPC = (char *) * (SP + framesize - 1);
-    } else {
-        /* ReturnAddr is RA */
-        *pPC = RA;
-
-        /* find "ret.n" */
-        for ( j = 0 ; j < i ; j++ ) {
-            if ( *(PC - j) == 0x0d && *(PC - j + 1) == 0xf0 ) {
+        /* find nearest "sub a1, a1, a9" */
+        if (*(PC - i) == 0x90 && *(PC - i + 1) == 0x11 &&
+            *(PC - i + 2) == 0xc0) {
+            i += 3;
+            if (*(PC - i) == 0x92 && (*(PC - i + 2)) % 16 == 0) {
+                framesize = (int)(*(unsigned char *)(PC - i + 2));
+                framesize += (*(unsigned char *)(PC - i + 1) - 0xa0) << 8;
+                framesize /= 4;
                 break;
             }
         }
-        if ( i == j ) {
+    }
+    if (framesize == 0) {
+        return 0;
+    }
+
+    if (PC - RA > 0 && PC - RA < i) {
+        /* RA has changed in func, so find stack to get ReturnAddr */
+        *pSP = SP + framesize;
+        *pPC = ((char *)*(SP + framesize - 1)) - 3;
+    } else {
+        /* ReturnAddr is RA */
+        *pPC = RA - 3;
+
+        /* find "ret.n" */
+        for (j = 0; j < i; j++) {
+            if (*(PC - j) == 0x0d && *(PC - j + 1) == 0xf0) {
+                break;
+            }
+        }
+        if (i == j) {
             /* no ret.n finded, so SP is changed in function */
             *pSP = SP + framesize;
         } else {
@@ -457,44 +481,160 @@ static int panicFindRetAddr_callee(int  **pSP, char **pPC, char *RA)
 }
 
 /* find current function caller, update PC and SP */
-static int panicFindRetAddr_caller(int  **pSP, char **pPC)
+static int panicFindRetAddr_caller(int **pSP, char **pPC)
 {
     int  *SP = *pSP;
     char *PC = *pPC;
     char *RA;
-    int  lmt, i;
-    signed char framesize = 0;
+    int   lmt, i;
+    int   framesize = 0;
 
     /* func call ways:
        1. "addi a1, a1, -N" to open stack frame, N is a multiplier of 16
           binary code: "12 c1 N"
-       2. ReturnAddr always be pushed in N-4
+       2. "movi a9, N; sub a1, a1, a9" to open stack frame, N is a multiplier of
+       16 binary code: "92 aN NN" "90 11 c0"
+       3. ReturnAddr always be pushed in N-4
        */
 
     lmt = panicCheckPcValid(PC);
-    for ( i = 0 ; i < lmt ; i++ ) {
+    for (i = 0; i < lmt; i++) {
         /* find nearest "addi a1, a1, -N" */
-        if ( *(PC - i) == 0x12 && *(PC - i + 1) == 0xc1 && (*(PC - i + 2)) % 16 == 0) {
-            framesize = *(PC - i + 2);
+        if (*(PC - i) == 0x12 && *(PC - i + 1) == 0xc1 &&
+            (*(PC - i + 2)) % 16 == 0) {
+            framesize = (int)(*(signed char *)(PC - i + 2));
             framesize /= -4;
             break;
         }
+        /* find nearest "sub a1, a1, a9" */
+        if (*(PC - i) == 0x90 && *(PC - i + 1) == 0x11 &&
+            *(PC - i + 2) == 0xc0) {
+            i += 3;
+            if (*(PC - i) == 0x92 && (*(PC - i + 2)) % 16 == 0) {
+                framesize = (int)(*(unsigned char *)(PC - i + 2));
+                framesize += (*(unsigned char *)(PC - i + 1) - 0xa0) << 8;
+                framesize /= 4;
+                break;
+            }
+        }
     }
 
-    if ( framesize == 0 ) {
+    if (framesize == 0) {
         return 0;
     }
 
     *pSP = SP + framesize;
-    *pPC = (char *) * (SP + framesize - 1);
+    *pPC = ((char *)*(SP + framesize - 1)) - 3;
 
     return 1;
 }
 
+__attribute__((__noinline__, __noclone__)) void panicGetPCnSP(char **PC,
+                                                              int  **SP)
+{
+    int   a;
+    char *lr;
+
+    asm volatile("mov %0, a0" : "=r"(lr));
+    *PC = lr;
+    *SP = (int *)&a + 4;
+}
+
+void panicGetPCnSPfromCtx(void *context, char **PC, char **LR, int **SP)
+{
+    int *ptr = context;
+
+    *PC = (char *)ptr[XT_STK_PC >> 2];
+    *LR = (char *)ptr[XT_STK_A0 >> 2];
+    *SP = (int *)ptr[XT_STK_A1 >> 2];
+}
+
+/* printf call stack */
+void backtraceNow(int (*print_func)(const char *fmt, ...))
+{
+    char *PC;
+    int  *SP;
+    int   x;
+    int   ret;
+
+    if (print_func == NULL) {
+        print_func = ets_printf;
+    }
+
+    panicGetPCnSP(&PC, &SP);
+
+    print_func("========== Call stack ==========\n");
+    for (x = 0; x < BACK_TRACE_LIMIT; x++) {
+        if (0 == panicFindRetAddr_caller(&SP, &PC)) {
+            break;
+        }
+        __asm__ volatile("" ::: "memory"); // for gcc bug
+        if (PC + 3 == (char *)krhino_task_deathbed) {
+            print_func("backtrace : ^task entry^\n");
+            break;
+        }
+        k_int2str((int)PC, &g_panic_call[14]);
+        print_func(g_panic_call);
+    }
+    print_func("==========    End     ==========\n");
+}
+
+
+/* printf call stack */
+void backtraceTask(char *taskname, int (*print_func)(const char *fmt, ...))
+{
+    char    *PC;
+    char    *LR;
+    int     *SP;
+    int      x;
+    int      ret;
+    ktask_t *task;
+
+    if (print_func == NULL) {
+        print_func = ets_printf;
+    }
+
+    task = krhino_task_find(taskname);
+    if (task == NULL) {
+        print_func("Task not found : %s\n", taskname);
+        return;
+    }
+    panicGetPCnSPfromCtx(task->task_stack, &PC, &LR, &SP);
+
+    print_func("========== Call stack ==========\n");
+    print_func("TaskName  : %s\n", taskname);
+    k_int2str((int)PC, &g_panic_call[14]);
+    print_func(g_panic_call);
+    if (0 == panicCheckPcValid(PC)) {
+        /* invalid pc, set Return Addr as pc */
+        PC = LR;
+        k_int2str((int)PC, &g_panic_call[14]);
+        print_func(g_panic_call);
+    } else {
+        panicFindRetAddr_callee(&SP, &PC, LR);
+        k_int2str((int)PC, &g_panic_call[14]);
+        print_func(g_panic_call);
+    }
+    for (x = 0; x < BACK_TRACE_LIMIT; x++) {
+        if (0 == panicFindRetAddr_caller(&SP, &PC)) {
+            break;
+        }
+        __asm__ volatile("" ::: "memory"); // for gcc bug
+        if (PC + 3 == (char *)krhino_task_deathbed) {
+            print_func("backtrace : ^task entry^\n");
+            break;
+        }
+        k_int2str((int)PC, &g_panic_call[14]);
+        print_func(g_panic_call);
+    }
+    print_func("==========    End     ==========\n");
+}
+
+
 void panicHandler(XtExcFrame *frame)
 {
     int  *regs = (int *)frame;
-    int  x, y;
+    int   x, y;
     int  *SP = (int *)regs[4];
     char *PC = (char *)regs[1];
 
@@ -507,29 +647,29 @@ void panicHandler(XtExcFrame *frame)
 
     g_double_exc++;
 
-    if ( g_double_exc == 1 ) {
+    if (g_double_exc == 1) {
         ets_printf("!!!!!!!!!! Exception  !!!!!!!!!!\n");
 
         ets_printf("========== Regs info  ==========\n");
         for (x = 0; x < 21; x++) {
-            k_int2str(regs[x + 1], &g_panic_info[21 * x + 11]);
+            k_int2str(regs[x + 1], &g_panic_info[20 * x + 11]);
         }
         ets_printf(g_panic_info);
 
         ets_printf("========== Stack info ==========\n");
-        for ( x = 0 ; x < 16 ; x++ ) {
+        for (x = 0; x < 16; x++) {
             k_int2str((int)&SP[x * 4], &g_panic_stack[8]);
-            k_int2str(SP[x * 4 + 0],   &g_panic_stack[21]);
-            k_int2str(SP[x * 4 + 1],   &g_panic_stack[32]);
-            k_int2str(SP[x * 4 + 2],   &g_panic_stack[43]);
-            k_int2str(SP[x * 4 + 3],   &g_panic_stack[54]);
+            k_int2str(SP[x * 4 + 0], &g_panic_stack[21]);
+            k_int2str(SP[x * 4 + 1], &g_panic_stack[32]);
+            k_int2str(SP[x * 4 + 2], &g_panic_stack[43]);
+            k_int2str(SP[x * 4 + 3], &g_panic_stack[54]);
             ets_printf(g_panic_stack);
         }
 
         ets_printf("========== Call stack ==========\n");
         k_int2str((int)PC, &g_panic_call[14]);
         ets_printf(g_panic_call);
-        if ( 0 == panicCheckPcValid(PC) ) {
+        if (0 == panicCheckPcValid(PC)) {
             /* invalid pc, set Return Addr as pc */
             PC = (char *)regs[3];
             k_int2str((int)PC, &g_panic_call[14]);
@@ -539,11 +679,12 @@ void panicHandler(XtExcFrame *frame)
             k_int2str((int)PC, &g_panic_call[14]);
             ets_printf(g_panic_call);
         }
-        for ( x = 0 ; x < 32 ; x++ ) {
-            if ( 0 == panicFindRetAddr_caller(&SP, &PC) ) {
+        for (x = 0; x < BACK_TRACE_LIMIT; x++) {
+            if (0 == panicFindRetAddr_caller(&SP, &PC)) {
                 break;
             }
-            if ( PC == (char *)&krhino_task_deathbed ) {
+            __asm__ volatile("" ::: "memory"); // for gcc bug
+            if (PC + 3 == (char *)krhino_task_deathbed) {
                 ets_printf("backtrace : ^task entry^\n");
                 break;
             }
@@ -557,9 +698,10 @@ void panicHandler(XtExcFrame *frame)
         krhino_task_overview(ets_printf);
 
         ets_printf("!!!!!!!!!! dump end   !!!!!!!!!!\n");
-    } else if ( g_double_exc == 2 ) {
+    } else if (g_double_exc == 2) {
         ets_printf("double exception occur!\r\n");
     }
 
-    while (1);
+    while (1)
+        ;
 }

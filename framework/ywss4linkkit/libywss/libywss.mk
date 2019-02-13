@@ -2,7 +2,7 @@ NAME := libywss
 
 $(NAME)_DEFINES := USE_LPTHREAD
 
-$(NAME)_COMPONENTS := digest_algorithm protocol.linkkit.iotkit connectivity.link-coap connectivity.mqtt
+$(NAME)_COMPONENTS := digest_algorithm protocol.linkkit.sdk
 
 $(NAME)_TYPE := framework
 $(NAME)_INCLUDES += . ./os/ ./os/product/ ./os/platform/ ./utility/

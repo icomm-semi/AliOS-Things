@@ -120,11 +120,12 @@ int aes_decrypt_string(char *cipher, char *plain, int len, int sec_lvl, char cbc
         case SEC_LVL_AES128_DEVICE:
         {
             char dev_sec[OS_DEVICE_SECRET_LEN + 1] = {0};
-            os_get_device_secret(dev_sec);
+            os_device_get_secret(dev_sec);
             cal_passwd(dev_sec, random, key);
             memcpy(iv, random, sizeof(random));
             break;
         }
+#if 0
         case SEC_LVL_AES128_MANU:
         {
             char manu_sec[OS_MANU_SECRET_LEN + 1] = {0};
@@ -133,6 +134,7 @@ int aes_decrypt_string(char *cipher, char *plain, int len, int sec_lvl, char cbc
             memcpy(iv, random, sizeof(random));
             break;
         }
+#endif
         default:
         {
             decrypt = 0;
