@@ -12,6 +12,7 @@ SDKDIR := sdk
 
 HOST_OPENOCD := ICEman
 
+MD5_CHECK := 1
 $(NAME)_TYPE := kernel
 
 $(NAME)_COMPONENTS += rhino hal netmgr middleware.common cjson digest_algorithm alicrypto network.lwip
