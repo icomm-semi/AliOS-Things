@@ -38,20 +38,15 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-if [ -d $origin_path/build/compiler/gcc-arm-none-eabi/Linux64/bin ]; then
-    echo "Copy toolchain from aos diretory to linkkit directory!"|grep --color ".*"
-    mkdir -p $comp_path/iotx-sdk-c_clone/.O/compiler/gcc-arm-none-eabi-linux/main
-    cp -rf $origin_path/build/compiler/gcc-arm-none-eabi/Linux64/bin $comp_path/iotx-sdk-c_clone/.O/compiler/gcc-arm-none-eabi-linux/main
-fi
 
-DEFAULT_BLD=$PWD/src/board/config.rhino.make make
+make -j4 -f .O/.one_makefile
 if [ $? -ne 0 ]; then
     echo "make fail!"
     exit 1
 fi
 
 echo "copy to library path: $origin_path/$library_path"
-cp output/release/lib/libiot_sdk.a $origin_path/$library_path
+cp ./.O/usr/lib/libiot_sdk.a $origin_path/$library_path
 if [ $? -ne 0 ]; then
     echo "cp failed!"
     exit 1
