@@ -86,7 +86,7 @@ define SELF_BUILD_RULE
 $(LIBS_DIR)/$(notdir $($(1)_SELF_BUIlD_COMP_targets)): $(OUTPUT_DIR)/config.mk
 	echo CONFIG_ENV_CFLAGS += $(RESOURCE_CFLAGS) > $($(1)_LOCATION)iotx-sdk-c_clone/aos_board_conf.mk
 	echo CROSS_PREFIX := $(TOOLCHAIN_PATH)$(TOOLCHAIN_PREFIX)>> $($(1)_LOCATION)iotx-sdk-c_clone/aos_board_conf.mk
-	sh $($(1)_LOCATION)$($(1)_SELF_BUIlD_COMP_scripts) $(LIBS_DIR)  $(SOURCE_ROOT)example/$(APP_FULL)
+	sh $($(1)_LOCATION)$($(1)_SELF_BUIlD_COMP_scripts) $(LIBS_DIR)  $(SOURCE_ROOT)example/$(APP_FULL) $(HOST_OS)
 endef
 
 
