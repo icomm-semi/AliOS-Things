@@ -34,7 +34,16 @@
 
 //#include <syslog.h>
 #include <string.h>
+#if defined(CONFIG_OS_RHINO)
+#define IFNAMSIZ 16
+struct ifreq {
+    char ifr_name[IFNAMSIZ]; /* Interface name */
+};
+#define  SO_BINDTODEVICE   0x0400 
+#else
 #include "arch/sys_arch.h"
+#endif
+
 #include "udhcp_common.h"
 #include "dhcpc.h"
 #include "udhcpd.h"
@@ -485,6 +494,19 @@ static NOINLINE void send_inform(int s, struct dhcp_packet *oldpacket)
     OS_MemFree((void *)packet);
 }
 
+void udhcp_socket_binkoutput(int skt)
+{
+	struct sockaddr_in addr;
+
+	memset((void*)&addr, 0, sizeof(addr));
+	addr.sin_family = AF_INET;
+	addr.sin_port = htons(SERVER_PORT);
+	addr.sin_addr.s_addr = htons(INADDR_ANY);
+
+	if (bind(skt, (struct sockaddr *)&addr, sizeof(addr)) == -1)
+		printf("!!!!bind port %d failed\r\n", SERVER_PORT);
+}
+
 void  udhcpd_run(void *arg)
 {
 	int send_size = 0;
@@ -499,11 +521,14 @@ void  udhcpd_run(void *arg)
     int server_socket = -1;
 	struct dyn_lease *lease, fake_lease;
     struct dhcp_packet *packet = NULL;
+    struct ifreq ifr;
 
     UDHCP_DEBUG("udhcpd run\r\n");
 
 	load_config(&server_config);
-
+    
+    memset(&ifr, 0, sizeof(ifr));
+    memcpy(ifr.ifr_name, "et1", sizeof("et1"));
 	/*setup the maximum lease time*/
 	option = udhcp_find_option(server_config.options, DHCP_LEASE_TIME);
 	if (option) {
@@ -615,7 +640,9 @@ void  udhcpd_run(void *arg)
 					case DHCPDISCOVER:
 						UDHCP_DEBUG("Received DISCOVER\r\n");
 						send_offer(server_socket, packet, static_lease_nip, lease, requested_ip_opt);
+                        setsockopt(server_socket, SOL_SOCKET, SO_BINDTODEVICE, &ifr, sizeof(ifr));
 						send_size = safe_write(server_socket, &pdhcp_pkt, dhcp_pkt_len);
+                        udhcp_socket_binkoutput(server_socket);
 						if (send_size < 0)
 							UDHCP_DEBUG("safe_write function send data failed\r\n");
 						else
@@ -721,7 +748,9 @@ void  udhcpd_run(void *arg)
 							/* client requested or configured IP matches the lease.
 							 * ACK it, and bump lease expiration time. */
 							send_ACK(server_socket, packet, lease->lease_nip);
+                            setsockopt(server_socket, SOL_SOCKET, SO_BINDTODEVICE, &ifr, sizeof(ifr));
 							send_size = safe_write(server_socket, &pdhcp_pkt, dhcp_pkt_len);
+                            udhcp_socket_binkoutput(server_socket);
 							if (send_size < 0)
 								UDHCP_DEBUG("safe_write function send data failed\r\n");
 							else
@@ -735,7 +764,9 @@ void  udhcpd_run(void *arg)
 						) {
 							/* "No, we don't have this IP for you" */
 							send_NAK(server_socket, packet);
+                            setsockopt(server_socket, SOL_SOCKET, SO_BINDTODEVICE, &ifr, sizeof(ifr));
 							send_size = safe_write(server_socket, &pdhcp_pkt, dhcp_pkt_len);
+                            udhcp_socket_binkoutput(server_socket);
 							if (send_size < 0)
 								UDHCP_DEBUG("safe_write function send data failed\r\n");
 							else

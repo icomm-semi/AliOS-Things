@@ -12,9 +12,9 @@
 #include "sta_func.h"
 #include "wifi_api.h"
 #include "netstack.h"
-#include "netstack_def.h"
 #include "uart/drv_uart.h"
 #include "rf/rf_api.h"
+#include "lowpower.h"
 
 void Cli_Task( void *args );
 
@@ -92,6 +92,13 @@ void ssvradio_init_task(void *pdata)
     OS_TaskDelete(NULL);
 }
 
+#if defined(SUPPORT_LOW_POWER) && (SUPPORT_LOW_POWER == 1)
+void bsp_rtc_startup (void *pdata) {
+    sys_rtc_cali();
+    OS_TaskDelete(NULL);
+}
+#endif
+
 extern void drv_uart_init(void);
 extern struct st_rf_table ssv_rf_table;
 void APP_Init(void)
@@ -128,6 +135,11 @@ void APP_Init(void)
     {
         FS_remove_prevota(fs_handle);
     }
+
+#if defined(SUPPORT_LOW_POWER) && (SUPPORT_LOW_POWER == 1)
+    sys_lowpower_init();
+    OS_TaskCreate(bsp_rtc_startup, "rtc", 512, NULL, OS_TASK_HIGH_PRIO, NULL);
+#endif
 
 #if 1
     OS_TaskCreate(Cli_Task, "cli", 1024, NULL, 1, NULL);
