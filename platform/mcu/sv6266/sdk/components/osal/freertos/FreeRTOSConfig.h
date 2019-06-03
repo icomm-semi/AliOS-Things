@@ -151,7 +151,11 @@ to exclude the API function. */
 //#define configUSE_PORT_OPTIMISED_TASK_SELECTION		1
 
 /* Tickless idle/low power functionality support. */
+#if defined(SUPPORT_LOW_POWER) && (SUPPORT_LOW_POWER == 1)
+#define configUSE_TICKLESS_IDLE                 1
+#else
 #define configUSE_TICKLESS_IDLE                 0
+#endif
 
 extern void vAssertCalled( const char *func, int line );
 #define configASSERT( x ) \
