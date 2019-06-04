@@ -261,6 +261,9 @@ static int wifi_start(hal_wifi_module_t *m, hal_wifi_init_type_t *init_para)
             wifi_connect_active_2((u8 *)init_para->wifi_ssid, strlen(init_para->wifi_ssid), (u8 *)init_para->wifi_key, strlen(init_para->wifi_key), wifi_cbfu, NET80211_CRYPT_UNKNOWN);
         }
     }
+#if (WIFI_CONFIG_SUPPORT_LOWPOWER > 0)
+    m->enter_powersave(m, WIFI_CONFIG_RECEIVE_DTIM);
+#endif
     return 0;
 }
 
@@ -517,6 +520,29 @@ void stop_debug_mode(hal_wifi_module_t *m)
 {
 }
 
+#if (WIFI_CONFIG_SUPPORT_LOWPOWER > 0)
+static int set_listeninterval(hal_wifi_module_t *m, uint8_t listen_interval)
+{
+    int status = -1;
+    printf("set listern interval %d, status %d\n", (uint32_t) listen_interval, status);
+    //add code to set listen interval
+    return 0;
+}
+
+static int enter_powersave(hal_wifi_module_t *m, uint8_t recvDTIMs)
+{
+    printf("enter_powersave\n");
+    //add code to enter wifi power save
+    return 0;
+}
+
+static int exit_powersave(hal_wifi_module_t *m)
+{
+    //add code to exit wifi power save
+    return 0;
+}
+
+#endif
 
 hal_wifi_module_t sim_aos_wifi_icomm = {
     .base.name           = "sim_aos_wifi_icomm",
@@ -541,5 +567,10 @@ hal_wifi_module_t sim_aos_wifi_icomm = {
     .wlan_send_80211_raw_frame = wlan_send_80211_raw_frame,
     .start_debug_mode = start_debug_mode,
     .stop_debug_mode = stop_debug_mode
+#if (WIFI_CONFIG_SUPPORT_LOWPOWER > 0)
+    .set_listeninterval =  set_listeninterval,
+    .enter_powersave    =  enter_powersave,
+    .exit_powersave     =  exit_powersave,
+#endif
 };
 
