@@ -21,6 +21,9 @@ provides low-level interface for setting CPU P-states.
 #include <pwrmgmt_debug.h>
 #include <cpu_tickless.h>
 
+extern one_shot_timer_t rtc_one_shot;
+static cpu_pwr_t cpu_pwr_node_core_0;
+
 /**
  * board_cpu_c_state_set - program CPU into Cx idle state
  *
@@ -47,9 +50,6 @@ static pwr_status_t board_cpu_c_state_set(uint32_t cpuCState, int master)
             break;
 
         case CPU_CSTATE_C1:
-            if ((uint32_t)expeted_sleep_ms < 3) {
-                return PWR_OK;
-            }
             /* put CPU into C1 state, for ARM we can call WFI instruction
                to put CPU into C1 state. */
             PWR_DBG(DBG_INFO, "enter C1\n");
@@ -145,10 +145,6 @@ pwr_status_t board_cpu_pwr_init(void)
     cpu_pwr_info_show();
     cpu_pwr_state_show();
 #endif
-
-    pmu_set_sysactive_time(5000);
-    pmu_set_sleep_type(SLEEP_CG);
-    pmu_release_wakelock(PMU_OS);
 
     return retVal;
 }

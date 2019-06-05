@@ -566,7 +566,7 @@ hal_wifi_module_t sim_aos_wifi_icomm = {
     .register_wlan_mgnt_monitor_cb = register_wlan_mgnt_monitor_cb,
     .wlan_send_80211_raw_frame = wlan_send_80211_raw_frame,
     .start_debug_mode = start_debug_mode,
-    .stop_debug_mode = stop_debug_mode
+    .stop_debug_mode = stop_debug_mode,
 #if (WIFI_CONFIG_SUPPORT_LOWPOWER > 0)
     .set_listeninterval =  set_listeninterval,
     .enter_powersave    =  enter_powersave,
