@@ -84,6 +84,10 @@ void wifi_cbfu(WIFI_RSP *msg)
         get_ip_stat(&sim_aos_wifi_icomm, &ipstat, STATION);
         sim_aos_wifi_icomm.ev_cb->stat_chg(&sim_aos_wifi_icomm, NOTIFY_STATION_UP, NULL);
         sim_aos_wifi_icomm.ev_cb->ip_got(&sim_aos_wifi_icomm, &ipstat, NULL);
+//#if (WIFI_CONFIG_SUPPORT_LOWPOWER > 0)
+//                    sim_aos_wifi_icomm->enter_powersave(sim_aos_wifi_icomm, WIFI_CONFIG_RECEIVE_DTIM);
+//#endif
+
     }
     else {
         LOG_AOS_HAL("wifi disconnected:%d\n", msg->id);
@@ -244,6 +248,9 @@ static int wifi_start(hal_wifi_module_t *m, hal_wifi_init_type_t *init_para)
     }
     else if(init_para->wifi_mode == STATION){
         DUT_wifi_start(DUT_STA);
+#if (WIFI_CONFIG_SUPPORT_LOWPOWER > 0)
+    m->enter_powersave(m, WIFI_CONFIG_RECEIVE_DTIM);
+#endif
         if(init_para->dhcp_mode == DHCP_SERVER){
             return -1;
         }else if(init_para->dhcp_mode == DHCP_DISABLE){
@@ -261,9 +268,6 @@ static int wifi_start(hal_wifi_module_t *m, hal_wifi_init_type_t *init_para)
             wifi_connect_active_2((u8 *)init_para->wifi_ssid, strlen(init_para->wifi_ssid), (u8 *)init_para->wifi_key, strlen(init_para->wifi_key), wifi_cbfu, NET80211_CRYPT_UNKNOWN);
         }
     }
-#if (WIFI_CONFIG_SUPPORT_LOWPOWER > 0)
-    m->enter_powersave(m, WIFI_CONFIG_RECEIVE_DTIM);
-#endif
     return 0;
 }
 
@@ -529,15 +533,19 @@ static int set_listeninterval(hal_wifi_module_t *m, uint8_t listen_interval)
     return 0;
 }
 
-static int enter_powersave(hal_wifi_module_t *m, uint8_t recvDTIMs)
+int enter_powersave(hal_wifi_module_t *m, uint8_t recvDTIMs)
 {
     printf("enter_powersave\n");
+    printf("[%s] !!!!\n", __func__);
+    set_power_mode(1, DUT_STA);
     //add code to enter wifi power save
     return 0;
 }
 
 static int exit_powersave(hal_wifi_module_t *m)
 {
+    printf("[%s] !!!!\n", __func__);
+    set_power_mode(0, DUT_STA);
     //add code to exit wifi power save
     return 0;
 }

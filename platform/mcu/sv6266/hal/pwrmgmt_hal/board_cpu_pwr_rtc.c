@@ -47,7 +47,7 @@ static pwr_status_t rtc_one_shot_stop(uint64_t *pPassedUs)
 
 static uint32_t rtc_one_shot_max_msec(void)
 {
-    return 0;
+    return 1000;
 }
 
 #endif /* AOS_COMP_PWRMGMT */

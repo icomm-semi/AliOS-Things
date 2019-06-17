@@ -17,6 +17,7 @@ $(NAME)_TYPE := kernel
 $(NAME)_COMPONENTS += rhino hal netmgr framework.common cli cjson digest_algorithm alicrypto
 $(NAME)_COMPONENTS += protocols.net
 $(NAME)_COMPONENTS += libc
+$(NAME)_COMPONENTS += pwrmgmt
 
 $(NAME)_COMPONENTS += platform/mcu/sv6266/$(SDKDIR)/components/bsp/soc/soc_init
 $(NAME)_COMPONENTS += platform/mcu/sv6266/osal
@@ -95,9 +96,10 @@ GLOBAL_ASMFLAGS += -DASICv2
 GLOBAL_DEFINES += CONFIG_CACHE_SUPPORT
 GLOBAL_DEFINES += CONFIG_ENABLE_WDT
 
-SUPPORT_LOW_POWER := 0
+SUPPORT_LOW_POWER := 1
 ifeq ($(strip $(SUPPORT_LOW_POWER)), 1)
 GLOBAL_DEFINES += FEATURE_RETENTION_BOOT
+GLOBAL_DEFINES += WIFI_CONFIG_SUPPORT_LOWPOWER
 endif
 
 GLOBAL_DEFINES += SUPPORT_PARTITION_MP_TABLE
@@ -182,22 +184,20 @@ GLOBAL_LDFLAGS += platform/mcu/sv6266/do_printf.o
 
 $(NAME)_INCLUDES := $(SDKDIR)/components/drv
 $(NAME)_SOURCES :=	aos.c \
-					libc_patch.c \
-					port/soc_impl.c \
-					port/port_tick.c \
-					hal/uart.c \
-					hal/flash_port.c \
-                    hal/wifi_port.c \
-                    hal/rf_cmd.c \
-                    hal/pwm.c \
-                    hal/adc.c \
-		    hal/gpio.c \
-		    hal/i2c.c  \
-		    hal/spi.c  \
-                    $(SDKDIR)/components/net/tcpip/lwip-1.4.0/src/netif/ethernetif.c \
-					hal/hw.c
-
-$(NAME)_SOURCES  += hal/pwrmgmt_hal/board_cpu_pwr_rtc.c \
-                    hal/pwrmgmt_hal/board_cpu_pwr_systick.c \
-                    hal/pwrmgmt_hal/board_cpu_pwr.c
-
+	libc_patch.c \
+	port/soc_impl.c \
+	port/port_tick.c \
+	hal/uart.c \
+	hal/flash_port.c \
+	hal/wifi_port.c \
+	hal/rf_cmd.c \
+	hal/pwm.c \
+	hal/adc.c \
+	hal/gpio.c \
+	hal/i2c.c  \
+	hal/spi.c  \
+	$(SDKDIR)/components/net/tcpip/lwip-1.4.0/src/netif/ethernetif.c \
+	hal/hw.c \
+	hal/pwrmgmt_hal/board_cpu_pwr_rtc.c \
+	hal/pwrmgmt_hal/board_cpu_pwr_systick.c \
+	hal/pwrmgmt_hal/board_cpu_pwr.c

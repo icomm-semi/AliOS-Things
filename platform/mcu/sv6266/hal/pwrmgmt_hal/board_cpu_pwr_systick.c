@@ -17,12 +17,12 @@ detail for how to implement these two functions.
 
 #if (AOS_COMP_PWRMGMT > 0)
 
-void systick_suspend(void)
-{
-}
-
-void systick_resume(void)
-{
-}
+//void systick_suspend(void)
+//{
+//}
+//
+//void systick_resume(void)
+//{
+//}
 
 #endif /* AOS_COMP_PWRMGMT */
