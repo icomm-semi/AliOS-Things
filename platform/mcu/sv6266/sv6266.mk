@@ -17,7 +17,6 @@ $(NAME)_TYPE := kernel
 $(NAME)_COMPONENTS += rhino hal netmgr framework.common cli cjson digest_algorithm alicrypto
 $(NAME)_COMPONENTS += protocols.net
 $(NAME)_COMPONENTS += libc
-$(NAME)_COMPONENTS += pwrmgmt
 
 $(NAME)_COMPONENTS += platform/mcu/sv6266/$(SDKDIR)/components/bsp/soc/soc_init
 $(NAME)_COMPONENTS += platform/mcu/sv6266/osal
@@ -99,7 +98,6 @@ GLOBAL_DEFINES += CONFIG_ENABLE_WDT
 SUPPORT_LOW_POWER := 1
 ifeq ($(strip $(SUPPORT_LOW_POWER)), 1)
 GLOBAL_DEFINES += FEATURE_RETENTION_BOOT
-GLOBAL_DEFINES += WIFI_CONFIG_SUPPORT_LOWPOWER
 endif
 
 GLOBAL_DEFINES += SUPPORT_PARTITION_MP_TABLE

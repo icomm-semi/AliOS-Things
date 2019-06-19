@@ -148,7 +148,7 @@ static pwr_status_t tickless_timer_init(void)
 static pwr_status_t tickless_one_shot_start(uint64_t sleep_time, cpu_cstate_t c_state_to_enter)
 {
     if (cStateOneShotTimer[c_state_to_enter]->one_shot_start(sleep_time) != PWR_OK) {
-        PWR_DBG(DBG_INFO, "start one shot(%lld ms) fail\n", sleep_time);
+        PWR_DBG(DBG_INFO, "start one shot(%lld us) fail\n", sleep_time);
 
         return (PWR_ERR);
     }
