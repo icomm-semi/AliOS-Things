@@ -529,6 +529,7 @@ static int set_listeninterval(hal_wifi_module_t *m, uint8_t listen_interval)
 {
     int status = -1;
     printf("set listern interval %d, status %d\n", (uint32_t) listen_interval, status);
+    //set_user_dtim_period(listen_interval);
     //add code to set listen interval
     return 0;
 }

@@ -67,11 +67,12 @@ static void aos_wdt_process() {
 static void wdt_task(void *pdata)
 {
     drv_wdt_init();
-    drv_wdt_enable(SYS_WDT, 6000);
+    drv_wdt_enable(SYS_WDT, 50000);
     drv_wdt_register_isr(SYS_WDT, 255, aos_wdt_process);
     while(1)
     {
         OS_MsDelay(3*1000);
+        //printf("kick\n");
         drv_wdt_kick(SYS_WDT);
     }
     OS_TaskDelete(NULL);

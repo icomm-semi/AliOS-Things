@@ -20,9 +20,12 @@ provides low-level interface for setting CPU P-states.
 #include <cpu_pwr_hal_lib.h>
 #include <pwrmgmt_debug.h>
 #include <cpu_tickless.h>
+#include <lowpower.h>
 
 extern one_shot_timer_t rtc_one_shot;
 static cpu_pwr_t cpu_pwr_node_core_0;
+
+uint32_t g_sleep_us;
 
 /**
  * board_cpu_c_state_set - program CPU into Cx idle state
@@ -41,6 +44,7 @@ static pwr_status_t board_cpu_c_state_set(uint32_t cpuCState, int master)
     switch (cpuCState) {
         case CPU_CSTATE_C0:
 
+            //printf("[%s] %s\n", __func__, "CPU_CSTATE_C0");
             if (master) {
                 /*
                  * do something needed when CPU waked up from C1 or higher
@@ -52,11 +56,38 @@ static pwr_status_t board_cpu_c_state_set(uint32_t cpuCState, int master)
         case CPU_CSTATE_C1:
             /* put CPU into C1 state, for ARM we can call WFI instruction
                to put CPU into C1 state. */
+            //printf("[%s] %s, %d\n", __func__, "CPU_CSTATE_C1", g_sleep_us);
             PWR_DBG(DBG_INFO, "enter C1\n");
+
+            // save hw timer
+            sys_save_timer();
+
+            // check hw timer remain time.
+            uint32_t hw_tmr_remain_tick_count = sys_timer_min_time();
+            if (g_sleep_us > hw_tmr_remain_tick_count) {
+                g_sleep_us = hw_tmr_remain_tick_count;
+            }
+
+            // disable timer clock.
+            uint32_t clk = sys_stop_clk();
+
+            // system sleep.
+            if (g_sleep_us < (1594+50)) {
+                g_sleep_us = 32;
+            } else {
+                g_sleep_us = sys_sleep(g_sleep_us);
+            }
+
+            // restore timer clock.
+            sys_resume_clk(clk);
+
+            // restore hw timer.
+            sys_timer_restore_time(g_sleep_us);
+            //printf("[%s] do rtc sleep %d\n", __func__, g_sleep_us);
 #if (PWRMGMT_CONFIG_LOG_ENTERSLEEP > 0)
             if (krhino_sys_tick_get() > (last_log_entersleep + RHINO_CONFIG_TICKS_PER_SECOND)) {
                 last_log_entersleep = krhino_sys_tick_get();
-                printf("enter sleep %d ms\r\n", (uint32_t) expeted_sleep_ms);
+                printf("enter sleep %d us\r\n", (uint32_t) g_sleep_us);
             }
 #endif
 
@@ -65,6 +96,7 @@ static pwr_status_t board_cpu_c_state_set(uint32_t cpuCState, int master)
             break;
 
         default:
+            printf("[%s] default\n", __func__);
             PWR_DBG(DBG_ERR, "invalid C state: C%d\n", cpuCState);
             break;
     }
@@ -146,6 +178,10 @@ pwr_status_t board_cpu_pwr_init(void)
     cpu_pwr_state_show();
 #endif
 
+#if (WIFI_CONFIG_SUPPORT_LOWPOWER > 0)
+    lowpower_mode(E_LOW_POWER_SLEEP);
+#endif
+
     return retVal;
 }
 
@@ -156,6 +192,8 @@ int pwrmgmt_suspend_lowpower() {
     RHINO_CRITICAL_EXIT_SCHED();
 #if (WIFI_CONFIG_SUPPORT_LOWPOWER > 0)
     //add code to suspend wifi lowpower
+    //printf("[%s]!!!!!!!!!!!\n", __func__);
+    lowpower_mode(E_LOW_POWER_ACTIVE);
 #endif
     return 1;
 }
@@ -167,6 +205,8 @@ int pwrmgmt_resume_lowpower() {
     RHINO_CRITICAL_EXIT_SCHED();
 #if (WIFI_CONFIG_SUPPORT_LOWPOWER > 0)
     //add code to resume wifi lowpower
+    //printf("[%s]!!!!!!!!!!!\n", __func__);
+    lowpower_mode(E_LOW_POWER_SLEEP);
 #endif
     return 1;
 }
