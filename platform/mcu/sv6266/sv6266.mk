@@ -64,6 +64,7 @@ GLOBAL_INCLUDES += $(SDKDIR)/components/osal
 GLOBAL_INCLUDES += $(SDKDIR)/components/inc
 GLOBAL_INCLUDES += $(SDKDIR)/components
 GLOBAL_INCLUDES += $(SDKDIR)/components/tools/atcmd
+GLOBAL_INCLUDES += $(SDKDIR)/components/drv/tmr
 GLOBAL_INCLUDES += $(SDKDIR)/components/inc/crypto \
                    $(SDKDIR)/components/softmac \
                    $(SDKDIR)/components/iotapi \

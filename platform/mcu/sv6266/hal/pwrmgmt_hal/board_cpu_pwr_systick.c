@@ -14,15 +14,21 @@ detail for how to implement these two functions.
 */
 
 #include <k_api.h>
+#include <drv_tmr.h>
+#include <soc_defs.h>
 
 #if (AOS_COMP_PWRMGMT > 0)
 
-//void systick_suspend(void)
-//{
-//}
-//
-//void systick_resume(void)
-//{
-//}
+void systick_suspend(void)
+{
+    intc_irq_disable(IRQ_SYSTICK);
+    hal_tm_deinit(TM_TU0_US);
+}
+
+void systick_resume(void)
+{
+    hal_tm_init(TM_TU0_US);
+    intc_irq_enable(IRQ_SYSTICK);
+}
 
 #endif /* AOS_COMP_PWRMGMT */
