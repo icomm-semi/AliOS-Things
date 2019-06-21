@@ -63,7 +63,7 @@ static pwr_status_t board_cpu_c_state_set(uint32_t cpuCState, int master)
             sys_save_timer();
 
             // check hw timer remain time.
-            uint32_t hw_tmr_remain_tick_count = sys_timer_min_time();
+            int32_t hw_tmr_remain_tick_count = sys_timer_min_time();
             if (g_sleep_us > hw_tmr_remain_tick_count) {
                 g_sleep_us = hw_tmr_remain_tick_count;
             }
@@ -72,8 +72,8 @@ static pwr_status_t board_cpu_c_state_set(uint32_t cpuCState, int master)
             uint32_t clk = sys_stop_clk();
 
             // system sleep.
-            if (g_sleep_us < (1594+50)) {
-                g_sleep_us = 32;
+            if (g_sleep_us < (2000)) {
+                g_sleep_us = 1;
             } else {
                 g_sleep_us = sys_sleep(g_sleep_us);
             }
@@ -83,7 +83,7 @@ static pwr_status_t board_cpu_c_state_set(uint32_t cpuCState, int master)
 
             // restore hw timer.
             sys_timer_restore_time(g_sleep_us);
-            //printf("[%s] do rtc sleep %d\n", __func__, g_sleep_us);
+
 #if (PWRMGMT_CONFIG_LOG_ENTERSLEEP > 0)
             if (krhino_sys_tick_get() > (last_log_entersleep + RHINO_CONFIG_TICKS_PER_SECOND)) {
                 last_log_entersleep = krhino_sys_tick_get();
