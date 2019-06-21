@@ -23,6 +23,7 @@ provides low-level interface for setting CPU P-states.
 #include <lowpower.h>
 
 extern one_shot_timer_t rtc_one_shot;
+extern one_shot_timer_t standby_rtc_one_shot;
 static cpu_pwr_t cpu_pwr_node_core_0;
 
 uint32_t g_sleep_us;
@@ -54,10 +55,20 @@ static pwr_status_t board_cpu_c_state_set(uint32_t cpuCState, int master)
             break;
 
         case CPU_CSTATE_C1:
-            /* put CPU into C1 state, for ARM we can call WFI instruction
-               to put CPU into C1 state. */
-            //printf("[%s] %s, %d\n", __func__, "CPU_CSTATE_C1", g_sleep_us);
-            PWR_DBG(DBG_INFO, "enter C1\n");
+#if (PWRMGMT_CONFIG_LOG_ENTERSLEEP > 0)
+            if (krhino_sys_tick_get() > (last_log_entersleep + RHINO_CONFIG_TICKS_PER_SECOND)) {
+                last_log_entersleep = krhino_sys_tick_get();
+                printf("enter standby\r\n");
+            }
+#endif
+            sys_clock_slow_wfi();
+            break;
+
+        case CPU_CSTATE_C2:
+            /* put CPU into C2 state, for ARM we can call WFI instruction
+               to put CPU into C2 state. */
+            //printf("[%s] %s, %d\n", __func__, "CPU_CSTATE_C2", g_sleep_us);
+            PWR_DBG(DBG_INFO, "enter C2\n");
 
             // save hw timer
             sys_save_timer();
@@ -92,7 +103,7 @@ static pwr_status_t board_cpu_c_state_set(uint32_t cpuCState, int master)
 #endif
 
             // add code to set cpu enter sleep
-            PWR_DBG(DBG_INFO, "exit C1\n");
+            PWR_DBG(DBG_INFO, "exit C2\n");
             break;
 
         default:
@@ -148,9 +159,10 @@ pwr_status_t board_cpu_pwr_init(void)
     }
 
     /* save support C status bitset : C0,C1 */
+//    cpu_pwr_c_state_capability_set(cpuIndex, CPU_STATE_BIT(CPU_CSTATE_C0)
+//                                   | CPU_STATE_BIT(CPU_CSTATE_C1));
     cpu_pwr_c_state_capability_set(cpuIndex, CPU_STATE_BIT(CPU_CSTATE_C0)
-                                   | CPU_STATE_BIT(CPU_CSTATE_C1)
-                                  );
+                                   | CPU_STATE_BIT(CPU_CSTATE_C1) | CPU_STATE_BIT(CPU_CSTATE_C2));
     if (retVal == PWR_ERR) {
         return PWR_ERR;
     }
@@ -162,16 +174,17 @@ pwr_status_t board_cpu_pwr_init(void)
      */
     cpu_pwr_c_state_latency_save(cpuIndex, CPU_CSTATE_C0, 0);
     cpu_pwr_c_state_latency_save(cpuIndex, CPU_CSTATE_C1, 0);
+    cpu_pwr_c_state_latency_save(cpuIndex, CPU_CSTATE_C2, 2000);
 
-    tickless_one_shot_timer_save(CPU_CSTATE_C1, &rtc_one_shot);
+    tickless_one_shot_timer_save(CPU_CSTATE_C1, &standby_rtc_one_shot);
+    tickless_one_shot_timer_save(CPU_CSTATE_C2, &rtc_one_shot);
 
     /*
     Tell the CPU PWR MGMT module which C state is supported with
     tickless function through tickless_c_states_add(c_state_x).
     */
     tickless_c_states_add(CPU_STATE_BIT(CPU_CSTATE_C0)
-                          | CPU_STATE_BIT(CPU_CSTATE_C1)
-                         );
+                          | CPU_STATE_BIT(CPU_CSTATE_C1) | CPU_STATE_BIT(CPU_CSTATE_C2                          ));
 
 #if RHINO_CONFIG_CPU_PWR_SHOW
     cpu_pwr_info_show();

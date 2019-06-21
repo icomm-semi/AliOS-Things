@@ -200,5 +200,6 @@ $(NAME)_SOURCES :=	aos.c \
 	$(SDKDIR)/components/net/tcpip/lwip-1.4.0/src/netif/ethernetif.c \
 	hal/hw.c \
 	hal/pwrmgmt_hal/board_cpu_pwr_rtc.c \
+	hal/pwrmgmt_hal/board_cpu_pwr_standby_rtc.c \
 	hal/pwrmgmt_hal/board_cpu_pwr_systick.c \
 	hal/pwrmgmt_hal/board_cpu_pwr.c
