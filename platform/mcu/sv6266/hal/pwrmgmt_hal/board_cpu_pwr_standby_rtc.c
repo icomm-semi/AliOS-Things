@@ -34,6 +34,8 @@ one_shot_timer_t standby_rtc_one_shot = {
     rtc_one_shot_stop,
 };
 
+static uint32_t start_count = 0;
+
 static void tmr_irq_handler (uint32_t irq_num)
 {
 //    printf ("%s:%d: In function: '%s': tmr%ld interrupt occurred\n", __FILENAME__, __LINE__ - 1, __func__, irq_num - IRQ_UTIMER_0);
@@ -51,29 +53,31 @@ static pwr_status_t rtc_init(void)
 
 static pwr_status_t rtc_one_shot_start(uint64_t planUs)
 {
-    int32_t count = 0;
-
     if (drv_tmr_get_interrupt_status(RTC_HW_TIMER_ID)) {
         drv_tmr_clear_interrupt_status(RTC_HW_TIMER_ID);
     }
 
-    count = planUs * RTC_HW_TIMER_FREQ / (uint64_t)1000000;
+    start_count = planUs * RTC_HW_TIMER_FREQ / (uint64_t)1000000;
 
-    drv_tmr_enable(RTC_HW_TIMER_ID, TM_MODE_AUTO_RELOAD, count);
+    drv_tmr_enable(RTC_HW_TIMER_ID, TM_MODE_AUTO_RELOAD, start_count);
     return PWR_OK;
 }
 
 static pwr_status_t rtc_one_shot_stop(uint64_t *pPassedUs)
 {
-    int32_t count = 0;
+    uint32_t count = 0;
 
     count = drv_tmr_get_current_count(RTC_HW_TIMER_ID);
 
     if ((count != 0) && (drv_tmr_get_interrupt_status(RTC_HW_TIMER_ID))) {
-        count = RTC_HW_TIMER_MAX_COUNT - count + RTC_HW_TIMER_MAX_COUNT;
+        count = RTC_HW_TIMER_MAX_COUNT - count + start_count;
+    } else if (start_count >= count){
+        count = start_count - count;
     } else {
-        count = RTC_HW_TIMER_MAX_COUNT - count;
+        printf("error : start_count = %d, count = %d\r\n", start_count, count);
+        count = 0;
     }
+
     *pPassedUs = count * (uint64_t)1000000 / RTC_HW_TIMER_FREQ;
 
     drv_tmr_disable(RTC_HW_TIMER_ID);
