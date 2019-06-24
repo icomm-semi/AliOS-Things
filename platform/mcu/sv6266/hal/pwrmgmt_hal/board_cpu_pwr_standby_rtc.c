@@ -70,7 +70,7 @@ static pwr_status_t rtc_one_shot_stop(uint64_t *pPassedUs)
     count = drv_tmr_get_current_count(RTC_HW_TIMER_ID);
 
     if ((count != 0) && (drv_tmr_get_interrupt_status(RTC_HW_TIMER_ID))) {
-        count = RTC_HW_TIMER_MAX_COUNT - count + start_count;
+        count = start_count - count + start_count;
     } else if (start_count >= count){
         count = start_count - count;
     } else {
