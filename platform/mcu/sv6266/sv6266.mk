@@ -188,6 +188,7 @@ $(NAME)_SOURCES :=	aos.c \
 	libc_patch.c \
 	port/soc_impl.c \
 	port/port_tick.c \
+	port/portISR.c \
 	hal/uart.c \
 	hal/flash_port.c \
 	hal/wifi_port.c \
