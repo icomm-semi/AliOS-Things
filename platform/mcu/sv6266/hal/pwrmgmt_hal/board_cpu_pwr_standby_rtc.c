@@ -21,6 +21,7 @@
 #define RTC_HW_TIMER_ID        TM_TU1_US
 #define RTC_HW_TIMER_MAX_COUNT 65535
 #define RTC_HW_TIMER_FREQ      1000000
+#define MSEC_PER_SYSTICK       (1000000 / RHINO_CONFIG_TICKS_PER_SECOND)
 
 static pwr_status_t rtc_init(void);
 static uint32_t     rtc_one_shot_max_msec(void);
@@ -35,6 +36,8 @@ one_shot_timer_t standby_rtc_one_shot = {
 };
 
 static uint32_t start_count = 0;
+extern uint32_t systick_remain_us;
+extern uint32_t systick_passed_us;
 
 static void tmr_irq_handler (uint32_t irq_num)
 {
@@ -65,7 +68,8 @@ static pwr_status_t rtc_one_shot_start(uint64_t planUs)
 
 static pwr_status_t rtc_one_shot_stop(uint64_t *pPassedUs)
 {
-    uint32_t count = 0;
+    uint32_t count        = 0;
+    uint64_t passed_timer = 0;
 
     count = drv_tmr_get_current_count(RTC_HW_TIMER_ID);
 
@@ -78,11 +82,13 @@ static pwr_status_t rtc_one_shot_stop(uint64_t *pPassedUs)
         count = 0;
     }
 
-    *pPassedUs = count * (uint64_t)1000000 / RTC_HW_TIMER_FREQ;
+    passed_timer      = count * (uint64_t)1000000 / RTC_HW_TIMER_FREQ + systick_passed_us;
+    *pPassedUs        = passed_timer / MSEC_PER_SYSTICK * MSEC_PER_SYSTICK;
+    systick_remain_us = passed_timer % MSEC_PER_SYSTICK;
 
     drv_tmr_disable(RTC_HW_TIMER_ID);
 
-  //  printf("[%s]!sleep_ed %lld\n", __func__, *pPassedUs);
+//    printf("[%s]!sleep_ed %lld, remian %d\n", __func__, *pPassedUs, systick_remain_us);
     return PWR_OK;
 }
 

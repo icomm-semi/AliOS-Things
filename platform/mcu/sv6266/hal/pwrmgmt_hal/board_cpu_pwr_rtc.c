@@ -17,6 +17,8 @@
 #include <cpu_tickless.h>
 #include <osal.h>
 
+#define MSEC_PER_SYSTICK (1000000 / RHINO_CONFIG_TICKS_PER_SECOND)
+
 static pwr_status_t rtc_init(void);
 static uint32_t     rtc_one_shot_max_msec(void);
 static pwr_status_t rtc_one_shot_start(uint64_t planUs);
@@ -33,6 +35,9 @@ static uint32_t timer_counter_start = 0;
 extern uint32_t g_power_xtal_force_active;
 extern uint32_t g_power_user_force_active;
 extern uint32_t g_power_rtc_force_active;
+
+extern uint32_t systick_remain_us;
+extern uint32_t systick_passed_us;
 
 #if defined(SUPPORT_LOW_POWER) && (SUPPORT_LOW_POWER == 1)
 void bsp_rtc_startup (void *pdata) {
@@ -81,7 +86,11 @@ static pwr_status_t rtc_one_shot_start(uint64_t planUs)
 
 static pwr_status_t rtc_one_shot_stop(uint64_t *pPassedUs)
 {
-    *pPassedUs = g_sleep_us;
+    uint64_t passed_timer = 0;
+
+    passed_timer      = g_sleep_us + systick_passed_us;
+    *pPassedUs        = passed_timer / MSEC_PER_SYSTICK * MSEC_PER_SYSTICK;
+    systick_remain_us = passed_timer % MSEC_PER_SYSTICK;
     //printf("[%s]!sleep_ed %lld\n", __func__, *pPassedUs);
     return PWR_OK;
 }
