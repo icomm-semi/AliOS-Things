@@ -17,7 +17,7 @@
 #include <cpu_tickless.h>
 #include <osal.h>
 
-#define MSEC_PER_SYSTICK (1000000 / RHINO_CONFIG_TICKS_PER_SECOND)
+#define MSEC_PER_SYSTICK ((uint64_t)1000000 / RHINO_CONFIG_TICKS_PER_SECOND)
 
 static pwr_status_t rtc_init(void);
 static uint32_t     rtc_one_shot_max_msec(void);

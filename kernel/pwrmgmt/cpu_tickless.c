@@ -289,7 +289,7 @@ static void tickless_enter_check(uint32_t cpu_idx, uint32_t cstate_cfg,
     }
 
     /* real sleep time should be reduced by latency time. */
-    sleep_time_us -= cStateLatency[cpu_idx][cpu_c_state];
+//    sleep_time_us -= cStateLatency[cpu_idx][cpu_c_state];
 
     /* save the real sleep time into p_sleeptime and return. */
     *p_sleeptime = sleep_time_us;
