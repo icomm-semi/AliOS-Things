@@ -357,6 +357,12 @@ typedef enum {
 }COUNTRY_CODE;
 
 typedef enum {
+	SCAN_END,
+	SCAN_ONGOING,
+    SCAN_TERMINATING,
+}SCAN_STATE;
+
+typedef enum {
     RADIO_BAND_2G=0,
     RADIO_BAND_5100=1,
     RADIO_BAND_5500=2,
@@ -444,6 +450,7 @@ typedef struct t_AP_DETAIL_INFO
     u8                    secondchinfo;
     u8                    noreconnect;
     u8                    rssi_threshold;
+    u8                    forcenmode;
 } AP_DETAIL_INFO;
 
 typedef struct t_IEEE80211STATUS
@@ -466,13 +473,16 @@ typedef struct t_IEEE80211STATUS
     u32 region_code;
     u32 watch_dog_count; //unit: (mini-seconds)    
 
-    u8                  available_index;
+    u8  available_index;
     u8	recordAP;      
     u8  countrycode;
     u8  atuartid;
     u8  atuartrate;
     u8  baserate;
     u8  powersave_enable;
+    u8  scanstatus;
+    OsTaskHandle scantask;
+    void (*scancallbackfn)(void *);
     
     //softap status!!
     OsBufQ        dhcps_que;

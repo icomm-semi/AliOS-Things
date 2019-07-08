@@ -183,14 +183,16 @@ void APP_Init(void)
 #define M_GPIO_USER_DEFINED     (1)
 
 // this will increase current.
+int lowpower_sleep_gpio_hook() ATTRIBUTE_SECTION_FAST_TEXT;
 int lowpower_sleep_gpio_hook() {
     // do your gpio setting
     //return M_GPIO_USER_DEFINED;
     // use default gpio setting.
-    return M_GPIO_DEFAULT;
+    return M_GPIO_USER_DEFINED;
 }
 
 // this will increase current.
+int lowpower_dormant_gpio_hook() ATTRIBUTE_SECTION_FAST_TEXT;
 int lowpower_dormant_gpio_hook() {
     // do your gpio setting
     //return M_GPIO_USER_DEFINED;
@@ -198,10 +200,12 @@ int lowpower_dormant_gpio_hook() {
     return M_GPIO_DEFAULT;
 }
 
+void lowpower_pre_sleep_hook() ATTRIBUTE_SECTION_FAST_TEXT;
 void lowpower_pre_sleep_hook() {
     // do nothing
 }
 
+void lowpower_post_sleep_hook() ATTRIBUTE_SECTION_FAST_TEXT;
 void lowpower_post_sleep_hook() {
     // do nothing
 }
