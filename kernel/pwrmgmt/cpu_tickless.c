@@ -240,9 +240,9 @@ static void tickless_enter_check(uint32_t cpu_idx, uint32_t cstate_cfg,
     if (n_ticks == RHINO_WAIT_FOREVER) {
         sleep_time_us = TIME_100_YEARS_IN_US;
     } else {
-        if (n_ticks > 1) {
-            n_ticks = n_ticks -1;
-        }
+//        if (n_ticks > 1) {
+//            n_ticks = n_ticks -1;
+//        }
         sleep_time_us = 1000000ull * n_ticks / RHINO_CONFIG_TICKS_PER_SECOND;
     }
 
@@ -321,16 +321,19 @@ static void tickless_enter(void)
          * management state. This one shot timer will wakeup the system
          * unless another asynchronous event has woken up the CPU already.
          */
+
+        /* suspend system tick interrupt */
+        systick_suspend();
         if (tickless_one_shot_start(sleep_time, cstate_to_enter) == PWR_OK) {
             is_current_tickless = TRUE;
+        } else {
+            systick_resume();
         }
     }
 
     c_state_entered = cstate_to_enter;
 
     if (is_current_tickless == TRUE) {
-        /* suspend system tick interrupt */
-        systick_suspend();
 
         /*
          * take CPU into relative C idle state which is decided by
@@ -408,6 +411,9 @@ static void tickless_exit(void)
     /* set is_current_tickless to FALSE */
     is_current_tickless = FALSE;
 
+    /* resume system tick interrupt */
+    systick_resume();
+
     krhino_spin_unlock_irq_restore(&ticklessSpin);
 
     if (n_ticks > 0) {
@@ -415,8 +421,6 @@ static void tickless_exit(void)
         tickless_announce_n(n_ticks);
     }
 
-    /* resume system tick interrupt */
-    systick_resume();
 }
 
 /**

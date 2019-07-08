@@ -19,6 +19,8 @@
 
 #define MSEC_PER_SYSTICK ((uint64_t)1000000 / RHINO_CONFIG_TICKS_PER_SECOND)
 
+#define SYSTICK_FREQ ((uint64_t)1000000)
+
 static pwr_status_t rtc_init(void);
 static uint32_t     rtc_one_shot_max_msec(void);
 static pwr_status_t rtc_one_shot_start(uint64_t planUs);
@@ -62,6 +64,7 @@ extern uint32_t g_sleep_us;
 
 static pwr_status_t rtc_one_shot_start(uint64_t planUs)
 {
+    planUs = planUs - systick_passed_us;
     if (planUs < M_RTC_MIN_SLEEP_US_TIME) {
         //printf("[%s]failed !!%lld\n", __func__, planUs);
         return PWR_ERR;
@@ -90,7 +93,7 @@ static pwr_status_t rtc_one_shot_stop(uint64_t *pPassedUs)
 
     passed_timer      = g_sleep_us + systick_passed_us;
     *pPassedUs        = passed_timer / MSEC_PER_SYSTICK * MSEC_PER_SYSTICK;
-    systick_remain_us = passed_timer % MSEC_PER_SYSTICK;
+    systick_remain_us = SYSTICK_FREQ / RHINO_CONFIG_TICKS_PER_SECOND - passed_timer % MSEC_PER_SYSTICK;
     //printf("[%s]!sleep_ed %lld\n", __func__, *pPassedUs);
     return PWR_OK;
 }

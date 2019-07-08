@@ -25,18 +25,19 @@ uint32_t systick_passed_us = 0;
 
 void systick_suspend(void)
 {
-    systick_passed_us = (systick_get_timer_period() - systick_get_remain_count()) * (1000000 / SYSTICK_FREQ);
-    systick_remain_us = 0;
+    systick_remain_us = systick_get_remain_count();
+    systick_passed_us = (SYSTICK_FREQ / RHINO_CONFIG_TICKS_PER_SECOND - systick_remain_us) * (1000000 / SYSTICK_FREQ);
+  //  printf("suspend remain %d\r\n", systick_remain_us);
     intc_irq_disable(IRQ_SYSTICK);
- //   hal_tm_deinit(TM_TU0_US);
-    systick_stop();
+    hal_tm_deinit(TM_TU0_US);
 }
 
 void systick_resume(void)
 {
-  //  hal_tm_init(TM_TU0_US);
+    hal_tm_init(TM_TU0_US);
     systick_stop();
-    systick_set_period((SYSTICK_FREQ / RHINO_CONFIG_TICKS_PER_SECOND - systick_remain_us) * SYSTICK_FREQ / 1000000);
+   // printf("suspend resume %d\r\n", systick_remain_us);
+    systick_set_period(systick_remain_us * SYSTICK_FREQ / 1000000);
     systick_start();
     systick_set_period(SYSTICK_FREQ / RHINO_CONFIG_TICKS_PER_SECOND);
     intc_irq_enable(IRQ_SYSTICK);
