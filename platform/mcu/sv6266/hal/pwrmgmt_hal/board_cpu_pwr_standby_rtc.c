@@ -84,7 +84,7 @@ static pwr_status_t rtc_one_shot_stop(uint64_t *pPassedUs)
         count = 0;
     }
 
-    passed_timer      = count * (uint64_t)1000000 / RTC_HW_TIMER_FREQ + systick_passed_us;
+    passed_timer      = count * (uint64_t)1000000 / RTC_HW_TIMER_FREQ + systick_passed_us + 45;
     *pPassedUs        = passed_timer / MSEC_PER_SYSTICK * MSEC_PER_SYSTICK;
     systick_remain_us = SYSTICK_FREQ / RHINO_CONFIG_TICKS_PER_SECOND - passed_timer % MSEC_PER_SYSTICK;
 

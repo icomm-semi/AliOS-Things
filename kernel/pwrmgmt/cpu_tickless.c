@@ -381,10 +381,11 @@ static void tickless_enter(void)
         systick_resume();
      }
 #endif
-    RHINO_CRITICAL_ENTER();
-    RHINO_CRITICAL_EXIT_SCHED();
 
     krhino_spin_unlock_irq_restore(&ticklessSpin);
+
+    RHINO_CRITICAL_ENTER();
+    RHINO_CRITICAL_EXIT_SCHED();
 }
 
 /**

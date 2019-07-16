@@ -84,7 +84,12 @@ static pwr_status_t board_cpu_c_state_set(uint32_t cpuCState, int master)
 
             // system sleep.
             if (g_sleep_us < (2000)) {
-                g_sleep_us = 1;
+                if (hw_tmr_remain_tick_count > 0) {
+                    g_sleep_us = 1;
+                }
+                else {
+                    g_sleep_us = 0;
+                }
             } else {
                 g_sleep_us = sys_sleep(g_sleep_us);
             }
@@ -186,6 +191,8 @@ pwr_status_t board_cpu_pwr_init(void)
     tickless_c_states_add(CPU_STATE_BIT(CPU_CSTATE_C0)
                           | CPU_STATE_BIT(CPU_CSTATE_C1) | CPU_STATE_BIT(CPU_CSTATE_C2                          ));
 
+//    tickless_c_states_add(CPU_STATE_BIT(CPU_CSTATE_C0)
+//                          | CPU_STATE_BIT(CPU_CSTATE_C1) );
 #if RHINO_CONFIG_CPU_PWR_SHOW
     cpu_pwr_info_show();
     cpu_pwr_state_show();

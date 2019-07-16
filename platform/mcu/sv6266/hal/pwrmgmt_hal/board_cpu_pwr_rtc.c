@@ -82,7 +82,6 @@ static pwr_status_t rtc_one_shot_start(uint64_t planUs)
         //printf("[%s] xtal_force_active\n", __func__);
         return PWR_ERR;
     }
-    //printf("[%s]!!%lld\n", __func__, planUs);
     g_sleep_us = planUs;
     return PWR_OK;
 }
@@ -91,10 +90,10 @@ static pwr_status_t rtc_one_shot_stop(uint64_t *pPassedUs)
 {
     uint64_t passed_timer = 0;
 
-    passed_timer      = g_sleep_us + systick_passed_us;
+    passed_timer      = g_sleep_us + systick_passed_us + 300;
     *pPassedUs        = passed_timer / MSEC_PER_SYSTICK * MSEC_PER_SYSTICK;
     systick_remain_us = SYSTICK_FREQ / RHINO_CONFIG_TICKS_PER_SECOND - passed_timer % MSEC_PER_SYSTICK;
-    //printf("[%s]!sleep_ed %lld\n", __func__, *pPassedUs);
+//    printf("[%s]!sleep_ed %lld\n", __func__, *pPassedUs);
     return PWR_OK;
 }
 
