@@ -120,6 +120,94 @@ buildtargets = {
             }
         },
     },
+
+    'aaa-old-ota-stress': {
+        'buildargs': 'linkkitapp@mk3080 pvtest=y',
+        'bincopy': ["out/linkkitapp@mk3080/binary/ota_all.bin", "linkkitapp_A_mk3080-general.bin"],
+        'versioninfo': ["out/linkkitapp@mk3080/binary/readme.txt", "linkkitapp_A_mk3080-general.txt"],
+        'keyinfo':{
+            'keyfile': "example/linkkitapp/linkkit_example_solo.c",
+            'keyvalue': {
+                'PRODUCT_KEY': 'a1yoMJ3Z34O',
+                'PRODUCT_SECRET': 'IHPkPiaTzRsY14I7',
+                'DEVICE_NAME': 'test222',
+                'DEVICE_SECRET': 'mFWU5vwQS4Fi3jzpkmoz9JtiCWZ8ETF6'
+            }
+        },
+    },
+
+    'aaa-new-linkkit-stress': {
+        'buildargs': 'linkkitapp@mk3080 pvtest=y',
+        'bincopy': ["out/linkkitapp@mk3080/binary/linkkitapp@mk3080.all.bin", "linkkitapp_stress_mk3080-general.bin"],
+        'keyinfo':{
+            'keyfile': "example/linkkitapp/linkkit_example_solo.c",
+            'keyvalue': {
+                'PRODUCT_KEY': 'a1yoMJ3Z34O',
+                'PRODUCT_SECRET': 'IHPkPiaTzRsY14I7',
+                'DEVICE_NAME': 'test111',
+                'DEVICE_SECRET': '9Ved8qBzKpRuO0Fv9Bf3jiZgS2cTcM52'
+            }
+        },
+    },
+
+    'zzz-new-ota-stress': {
+        'buildargs': 'linkkitapp@mk3080 pvtest=y',
+        'bincopy': ["out/linkkitapp@mk3080/binary/ota_all.bin", "linkkitapp_B_mk3080-general.bin"],
+        'versioninfo': ["out/linkkitapp@mk3080/binary/readme.txt", "linkkitapp_B_mk3080-general.txt"],
+        'keyinfo':{
+            'keyfile': "example/linkkitapp/linkkit_example_solo.c",
+            'keyvalue': {
+                'PRODUCT_KEY': 'a1yoMJ3Z34O',
+                'PRODUCT_SECRET': 'IHPkPiaTzRsY14I7',
+                'DEVICE_NAME': 'test222',
+                'DEVICE_SECRET': 'mFWU5vwQS4Fi3jzpkmoz9JtiCWZ8ETF6'
+            }
+        },
+    },
+
+    'zzz-newesp32-ota-stress': {
+        'buildargs': 'linkkitapp@esp32devkitc pvtest=y',
+        'bincopy': ["out/linkkitapp@esp32devkitc/binary/linkkitapp@esp32devkitc.bin", "linkkitapp_B_esp32-general.bin"],
+        'versioninfo': ["out/linkkitapp@esp32devkitc/binary/readme.txt", "linkkitapp_B_esp32-general.txt"],
+        'keyinfo':{
+            'keyfile': "example/linkkitapp/linkkit_example_solo.c",
+            'keyvalue': {
+                'PRODUCT_KEY': 'a1yoMJ3Z34O',
+                'PRODUCT_SECRET': 'IHPkPiaTzRsY14I7',
+                'DEVICE_NAME': 'esp32_ota_test',
+                'DEVICE_SECRET': 'wDYeriqc6c8D3KvcTVmBzfaif53N28oc'
+            }
+        },
+    },
+
+    'aaa-oldesp32-ota-stress': {
+        'buildargs': 'linkkitapp@esp32devkitc pvtest=y',
+        'bincopy': ["out/linkkitapp@esp32devkitc/binary/linkkitapp@esp32devkitc.bin", "linkkitapp_A_esp32-general.bin"],
+        'versioninfo': ["out/linkkitapp@esp32devkitc/binary/readme.txt", "linkkitapp_A_esp32-general.txt"],
+        'keyinfo':{
+            'keyfile': "example/linkkitapp/linkkit_example_solo.c",
+            'keyvalue': {
+                'PRODUCT_KEY': 'a1yoMJ3Z34O',
+                'PRODUCT_SECRET': 'IHPkPiaTzRsY14I7',
+                'DEVICE_NAME': 'esp32_ota_test',
+                'DEVICE_SECRET': 'wDYeriqc6c8D3KvcTVmBzfaif53N28oc'
+            }
+        },
+    },
+
+    'aaa-newesp32-linkkit-stress': {
+        'buildargs': 'linkkitapp@esp32devkitc pvtest=y',
+        'bincopy': ["out/linkkitapp@esp32devkitc/binary/linkkitapp@esp32devkitc.bin", "linkkitapp_esp32-general.bin"],
+        'keyinfo':{
+            'keyfile': "example/linkkitapp/linkkit_example_solo.c",
+            'keyvalue': {
+                'PRODUCT_KEY': 'a1yoMJ3Z34O',
+                'PRODUCT_SECRET': 'IHPkPiaTzRsY14I7',
+                'DEVICE_NAME': 'esp32_linkkit_test',
+                'DEVICE_SECRET': '6rMz1o8pRUA51XAEtCgEGDkGDbrPC8MV'
+            }
+        },
+    },
     'sv6266-helloworld': {
         'buildargs': 'helloworld@sv6266_evb',
         'bincopy': ["out/helloworld@sv6266_evb/binary/helloworld@sv6266_evb.bin", "helloworld@sv6266-general.bin"]
@@ -149,6 +237,7 @@ testsuits = {
             'linkkit_connect': {'script':'linkkit_connect_test.py', 'firmware_prefix':'linkkitapp@', 'firmware_suffix': '-general.bin'},
             'mqtt_connect': {'script':'mqtt_connect_test.py', 'firmware_prefix':'mqttapp@', 'firmware_suffix': '-general.bin'},
             'coap_connect': {'script':'coap_connect_test.py', 'firmware_prefix':'coapapp@', 'firmware_suffix': '-general.bin'},
+            'linkkit_stress_test': {'script':'linkkit_stress_test.py', 'firmware_prefix':'linkkitapp_stress_', 'firmware_suffix': '-general.bin'},
             },
         'wifissid': 'aos_test_01',
         'wifipass': 'Alios@Embedded',
@@ -170,6 +259,13 @@ testsuits = {
         'wifissid': 'Yuemewifi-3766',
         'wifipass': 'aos12345',
         },
+    'ota': {
+        'tests': {
+            'stress_test': {'script':'ota.py', 'firmware_prefix':'linkkitapp_stress_', 'firmware_suffix': '-general.bin','dependencies':['device-test-client.sh']},
+            },
+        'wifissid': 'aos_test_01',
+        'wifipass': 'Alios@Embedded',
+        },
 }
 
 models = {
@@ -183,11 +279,13 @@ models = {
        #['basic', 'helloworld'],
        #['link', 'linkkit_connect'],
        #['link', 'mqtt_connect'],
+       ['link', 'linkkit_stress_test', ['daily']],
        ],
    'esp32': [
        ['basic', 'helloworld'],
        ['link', 'linkkit_connect'],
        ['link', 'mqtt_connect'],
+       ['ota', 'stress_test', ['daily']],
        ],
    'esp8266': [
        ['basic', 'helloworld'],
