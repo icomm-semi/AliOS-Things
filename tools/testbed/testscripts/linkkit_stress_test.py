@@ -47,7 +47,7 @@ __hsf_version__= "1.0.0.pre"
 
 form = {
     "productKey":"a1yoMJ3Z34O",
-    "deviceName":"test111",
+    "deviceName":"mk3060_linkkit_test",
     "intervalMin":0.5,
     "intervalMax":0.5,
     "frequency":2,

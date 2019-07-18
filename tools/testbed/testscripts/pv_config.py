@@ -197,7 +197,7 @@ buildtargets = {
 
     'aaa-newesp32-linkkit-stress': {
         'buildargs': 'linkkitapp@esp32devkitc pvtest=y',
-        'bincopy': ["out/linkkitapp@esp32devkitc/binary/linkkitapp@esp32devkitc.bin", "linkkitapp_esp32-general.bin"],
+        'bincopy': ["out/linkkitapp@esp32devkitc/binary/linkkitapp@esp32devkitc.bin", "linkkitapp_stress_esp32-general.bin"],
         'keyinfo':{
             'keyfile': "example/linkkitapp/linkkit_example_solo.c",
             'keyvalue': {
@@ -205,6 +205,50 @@ buildtargets = {
                 'PRODUCT_SECRET': 'IHPkPiaTzRsY14I7',
                 'DEVICE_NAME': 'esp32_linkkit_test',
                 'DEVICE_SECRET': '6rMz1o8pRUA51XAEtCgEGDkGDbrPC8MV'
+            }
+        },
+    },
+
+    'zzz-mk3060-ota-stress': {
+        'buildargs': 'linkkitapp@mk3060 pvtest=y',
+        'bincopy': ["out/linkkitapp@mk3060/binary/linkkitapp@mk3060_crc.bin", "linkkitapp_B_mk3060-general.bin"],
+        'versioninfo': ["out/linkkitapp@mk3060/binary/readme.txt", "linkkitapp_B_mk3060-general.txt"],
+        'keyinfo':{
+            'keyfile': "example/linkkitapp/linkkit_example_solo.c",
+            'keyvalue': {
+                'PRODUCT_KEY': 'a1yoMJ3Z34O',
+                'PRODUCT_SECRET': 'IHPkPiaTzRsY14I7',
+                'DEVICE_NAME': 'mk3060_ota_test',
+                'DEVICE_SECRET': 'CZ7kxrF4JUj3c7Fdsr5RAwW411p3ihUn'
+            }
+        },
+    },
+
+    'aaa-oldmk3060-ota-stress': {
+        'buildargs': 'linkkitapp@mk3060 pvtest=y',
+        'bincopy': ["out/linkkitapp@mk3060/binary/linkkitapp@mk3060_crc.bin", "linkkitapp_A_mk3060-general.bin"],
+        'versioninfo': ["out/linkkitapp@mk3060/binary/readme.txt", "linkkitapp_A_mk3060-general.txt"],
+        'keyinfo':{
+            'keyfile': "example/linkkitapp/linkkit_example_solo.c",
+            'keyvalue': {
+                'PRODUCT_KEY': 'a1yoMJ3Z34O',
+                'PRODUCT_SECRET': 'IHPkPiaTzRsY14I7',
+                'DEVICE_NAME': 'mk3060_ota_test',
+                'DEVICE_SECRET': 'CZ7kxrF4JUj3c7Fdsr5RAwW411p3ihUn'
+            }
+        },
+    },
+
+    'aaa-newmk3060-linkkit-stress': {
+        'buildargs': 'linkkitapp@mk3060 pvtest=y',
+        'bincopy': ["out/linkkitapp@mk3060/binary/linkkitapp@mk3060_crc.bin", "linkkitapp_stress_mk3060-general.bin"],
+        'keyinfo':{
+            'keyfile': "example/linkkitapp/linkkit_example_solo.c",
+            'keyvalue': {
+                'PRODUCT_KEY': 'a1yoMJ3Z34O',
+                'PRODUCT_SECRET': 'IHPkPiaTzRsY14I7',
+                'DEVICE_NAME': 'mk3060_linkkit_test',
+                'DEVICE_SECRET': 'vxloqgDJsShE2PooVINHGwLRiFexN2z9'
             }
         },
     },
@@ -274,18 +318,18 @@ models = {
        ['link', 'linkkit_connect'],
        ['link', 'mqtt_connect'],
        #['link', 'coap_connect'],
+       ['link', 'linkkit_stress_test', ['daily']],
+       ['ota', 'stress_test', ['daily']],
        ],
     'mk3080': [
        #['basic', 'helloworld'],
        #['link', 'linkkit_connect'],
        #['link', 'mqtt_connect'],
-       ['link', 'linkkit_stress_test', ['daily']],
        ],
    'esp32': [
        ['basic', 'helloworld'],
        ['link', 'linkkit_connect'],
        ['link', 'mqtt_connect'],
-       ['ota', 'stress_test', ['daily']],
        ],
    'esp8266': [
        ['basic', 'helloworld'],

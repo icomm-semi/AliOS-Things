@@ -366,7 +366,7 @@ def main():
         "rollbackVersion":rollbackVersion,
         "timeout":"300",
         "productKey":productKey,
-        "deviceName":"esp32_ota_test",
+        "deviceName":"mk3060_ota_test",
         "interval":"20",
         "userId":"148528"
     }
