@@ -670,6 +670,7 @@ class Testcase:
         'sv6266':'0x0',
         'csky':'0x10010800',
         'xr871':'0x0',
+        'rda5981':'0x4000',
     }
 
     ap_ssid = 'aos_test_01'
