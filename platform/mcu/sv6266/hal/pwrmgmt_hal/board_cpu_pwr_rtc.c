@@ -90,7 +90,7 @@ static pwr_status_t rtc_one_shot_stop(uint64_t *pPassedUs)
 {
     uint64_t passed_timer = 0;
 
-    passed_timer      = g_sleep_us + systick_passed_us + 300;
+    passed_timer      = g_sleep_us + systick_passed_us;
     *pPassedUs        = passed_timer / MSEC_PER_SYSTICK * MSEC_PER_SYSTICK;
     systick_remain_us = SYSTICK_FREQ / RHINO_CONFIG_TICKS_PER_SECOND - passed_timer % MSEC_PER_SYSTICK;
 //    printf("[%s]!sleep_ed %lld\n", __func__, *pPassedUs);

@@ -14,7 +14,7 @@ HOST_OPENOCD := ICEman
 
 $(NAME)_TYPE := kernel
 
-$(NAME)_COMPONENTS += rhino hal netmgr framework.common cli cjson digest_algorithm alicrypto
+$(NAME)_COMPONENTS += rhino hal netmgr framework.common cjson digest_algorithm alicrypto
 $(NAME)_COMPONENTS += protocols.net
 $(NAME)_COMPONENTS += libc
 

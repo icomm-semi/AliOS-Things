@@ -21,6 +21,7 @@ provides low-level interface for setting CPU P-states.
 #include <pwrmgmt_debug.h>
 #include <cpu_tickless.h>
 #include <lowpower.h>
+#define REG32(reg) (*(uint32_t volatile *)(reg))
 
 extern one_shot_timer_t rtc_one_shot;
 extern one_shot_timer_t standby_rtc_one_shot;
@@ -79,26 +80,34 @@ static pwr_status_t board_cpu_c_state_set(uint32_t cpuCState, int master)
                 g_sleep_us = hw_tmr_remain_tick_count;
             }
 
-            // disable timer clock.
-            uint32_t clk = sys_stop_clk();
-
             // system sleep.
-            if (g_sleep_us < (2000)) {
-                if (hw_tmr_remain_tick_count > 0) {
-                    g_sleep_us = 1;
-                }
-                else {
-                    g_sleep_us = 0;
-                }
+            if (g_sleep_us < (1800)) {
+                //if (hw_tmr_remain_tick_count > 0) {
+                //    g_sleep_us = 1;
+                //}
+                //else {
+                //    g_sleep_us = 0;
+                //}
+                //
+                g_sleep_us = 1;
             } else {
+#if 1
+                // disable timer clock.
+                uint32_t clk = sys_stop_clk();
+
                 g_sleep_us = sys_sleep(g_sleep_us);
+
+                // restore timer clock.
+                sys_resume_clk(clk);
+
+                // restore hw timer.
+                sys_timer_restore_time(g_sleep_us);
+#else
+                system_delay(system_us2delaytick(g_sleep_us));
+#endif
             }
 
-            // restore timer clock.
-            sys_resume_clk(clk);
 
-            // restore hw timer.
-            sys_timer_restore_time(g_sleep_us);
 
 #if (PWRMGMT_CONFIG_LOG_ENTERSLEEP > 0)
             if (krhino_sys_tick_get() > (last_log_entersleep + RHINO_CONFIG_TICKS_PER_SECOND)) {
