@@ -30,6 +30,7 @@
 #define SETTING_PSRAM_HEAP_SIZE 0x0
 #endif
 
+#include "memory_control.lds.S"
 
 ENTRY(OTA_BOOT)
 EXTERN(_start)
@@ -117,15 +118,7 @@ SECTIONS
     {
         . = ALIGN(4);
         __XIP_TEXT_START = .;
-        #if defined(SETTING_THROUGHPUT_HIGH)
-			*(.text .stub EXCLUDE_FILE (*libota_boot.a:*.o *libsrm_sys.a:*flash.o *libflashctl.a:*flashctl.o *libfreertos.a:*queue.o *libfreertos.a:*list.o *libfreertos.a:*tasks.o *libfreertos.a:*port.o *libfreertos.a:*portISR.o *osal_freertos.o *heap_5.o *sys_arch.o *api_msg.o *edca.o) .text.* .gnu.linkonce.t.* ) KEEP(*(.text.*personality* )) *(.gnu.warning )
-    	#else
-			#ifdef CONFIG_OS_RHINO
-			*(.text .stub EXCLUDE_FILE (*bootloader.a:*.o *sys.a:*flash.o *sys.a:*xip.o) .text.* .gnu.linkonce.t.* ) KEEP(*(.text.*personality* )) *(.gnu.warning )
-			#else
-			*(.text .stub EXCLUDE_FILE (*libota_boot.a:*.o *libsrm_sys.a:*flash.o *libflashctl.a:*flashctl.o *sys_arch.o *api_msg.o *edca.o) .text.* .gnu.linkonce.t.* ) KEEP(*(.text.*personality* )) *(.gnu.warning )
-			#endif
-    	#endif
+        *( EXCLUDE_FILE (M_FAST_BOOT M_ILM) .text EXCLUDE_FILE (M_FAST_BOOT M_ILM) .stub EXCLUDE_FILE (M_FAST_BOOT M_ILM) .text.* EXCLUDE_FILE (M_FAST_BOOT M_ILM) .gnu.linkonce.t.* ) KEEP(*(.text.*personality* )) *(.gnu.warning )
          . = ALIGN(4);
          __XIP_TEXT_END = .;
     } > REGION_BURN
@@ -135,19 +128,7 @@ SECTIONS
     PROVIDE (etext = .);
     .rodata :
     {
-    	#if defined(SETTING_THROUGHPUT_HIGH)
-			#ifdef MBED_RO_TURN			
-			*(.rodata EXCLUDE_FILE (*libota_boot.a:*.o *libsrm_sys.a:*flash.o *libflashctl.a:*flashctl.o *libfreertos.a:*queue.o *libfreertos.a:*list.o *libfreertos.a:*tasks.o *libfreertos.a:*port.o *libfreertos.a:*portISR.o *osal_freertos.o *heap_5.o *sys_arch.o *api_msg.o *edca.o *libmbedtls.a:*aes.o *libmbedtls.a:*sha512.o *libmbedtls.a:*bignum.o  *libmbedtls.a:*gcm.o) .rodata.* .gnu.linkonce.r.* )
-			#else
-			*(.rodata EXCLUDE_FILE (*libota_boot.a:*.o *libsrm_sys.a:*flash.o *libflashctl.a:*flashctl.o *libfreertos.a:*queue.o *libfreertos.a:*list.o *libfreertos.a:*tasks.o *libfreertos.a:*port.o *libfreertos.a:*portISR.o *osal_freertos.o *heap_5.o *sys_arch.o *api_msg.o *edca.o) .rodata.* .gnu.linkonce.r.* )
-			#endif
-    	#else
-			#ifdef CONFIG_OS_RHINO
-			*(.rodata EXCLUDE_FILE (*bootloader.a:*.o *sys.a:*flash.o *sys.a:*xip.o) .rodata.* .gnu.linkonce.r.* )
-			#else
-			*(.rodata EXCLUDE_FILE (*libota_boot.a:*.o *libsrm_sys.a:*flash.o *libflashctl.a:*flashctl.o *sys_arch.o *api_msg.o *edca.o) .rodata.* .gnu.linkonce.r.* )
-			#endif
-    	#endif
+        *(EXCLUDE_FILE (M_FAST_BOOT M_ILM_RO) .rodata EXCLUDE_FILE (M_FAST_BOOT M_ILM_RO) .rodata.* .gnu.linkonce.r.* )
     } > REGION_BURN
     .rodata1 :
     {
@@ -184,13 +165,7 @@ SECTIONS
     .fast_boot_code : M_VMA_AT(.nds32_init)
     {
          KEEP(*(.fast_boot_code))
-         #ifdef CONFIG_OS_RHINO
-         KEEP(*sys.a:*flash.o (.text.* .rodata.*))
-         KEEP(*sys.a:*xip.o (.text.* .rodata.*))
-         #else
-         KEEP(*libsrm_sys.a:*flash.o (.text.* .rodata.*))
-         KEEP(*libflashctl.a:*flashctl.o (.text.* .rodata.*))
-         #endif
+         M_FAST_BOOT_TEXT_RO
     } > REGION_TEXT_FAST
     .rela.text : M_VMA_AT(.fast_boot_code)
     {
@@ -208,40 +183,7 @@ SECTIONS
     __flash_end = ADDR(.prog_in_sram);
     .prog_in_sram : M_VMA_AT(.rela.dyn)
     {
-		KEEP(*sys_arch.o (.text.* .rodata.*))
-		KEEP(*api_msg.o (.text.* .rodata.*))*/
-		KEEP(*edca.o (.text.* .rodata.*))
-#if defined(SETTING_THROUGHPUT_HIGH)
-	#ifdef CONFIG_OS_ALIOS
-	#else
-		KEEP(*libfreertos.a:*queue.o (.text.* .rodata.*))
-		KEEP(*libfreertos.a:*list.o (.text.* .rodata.*))
-		KEEP(*libfreertos.a:*tasks.o (.text.* .rodata.*))
-		KEEP(*libfreertos.a:*port.o (.text.* .rodata.*))
-		KEEP(*libfreertos.a:*portISR.o (.text.* .rodata.*))
-		KEEP(*osal_freertos.o (.text.* .rodata.*)) 
-		KEEP(*heap_5.o (.text.* .rodata.*))
-		#ifdef MBED_RO_TURN	
-		KEEP(*libmbedtls.a:*aes.o (.rodata.*))
-		KEEP(*libmbedtls.a:*sha512.o (.rodata.*))
-		KEEP(*libmbedtls.a:*bignum.o (.rodata.*))
-		KEEP(*libmbedtls.a:*gcm.o (.rodata.*))
-		#endif
-	#endif
-#endif
-/*		KEEP(*netstack.o (.text.* .rodata.*))
-		KEEP(*ethernetif.o (.text.* .rodata.*))
-		KEEP(*tcpip.o (.text.* .rodata.*))
-		KEEP(*ip4.o (.text.* .rodata.*))
-		KEEP(*tcp_in.o (.text.* .rodata.*))
-		KEEP(*udp.o (.text.* .rodata.*))
-		KEEP(*tcp_out.o (.text.* .rodata.*))
-		KEEP(*etharp.o (.text.* .rodata.*))
-		KEEP(*inet_chksum.o (.text.* .rodata.*))
-		KEEP(*sys_arch.o (.text.* .rodata.*))
-		KEEP(*netif.o (.text.* .rodata.*))
-		KEEP(*def.o (.text.* .rodata.*))
-		KEEP(*lwip_pbuf.o (.text.* .rodata.*))*/
+		*(.text.* .rodata.* .text)
 		*(.copy_to_sram .copy_to_sram.*)
         *(.prog_in_sram .prog_in_sram.*)
     } > REGION_TEXT_FAST
