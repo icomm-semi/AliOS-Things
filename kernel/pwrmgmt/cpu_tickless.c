@@ -369,6 +369,9 @@ static void tickless_enter(void)
 
         n_ticks = tickless_one_shot_stop(c_state_entered);
 
+        /* resume system tick interrupt */
+        systick_resume();
+
         /* set is_current_tickless to FALSE */
         is_current_tickless = FALSE;
 
@@ -377,8 +380,6 @@ static void tickless_enter(void)
             tickless_announce_n(n_ticks);
         }
 
-        /* resume system tick interrupt */
-        systick_resume();
      }
 #endif
 
