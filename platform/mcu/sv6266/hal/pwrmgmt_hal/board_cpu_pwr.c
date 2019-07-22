@@ -172,11 +172,15 @@ pwr_status_t board_cpu_pwr_init(void)
         return PWR_ERR;
     }
 
+#define HAVE_RTC
     /* save support C status bitset : C0,C1 */
-//    cpu_pwr_c_state_capability_set(cpuIndex, CPU_STATE_BIT(CPU_CSTATE_C0)
-//                                   | CPU_STATE_BIT(CPU_CSTATE_C1));
+#if defined(HAVE_RTC)
     cpu_pwr_c_state_capability_set(cpuIndex, CPU_STATE_BIT(CPU_CSTATE_C0)
                                    | CPU_STATE_BIT(CPU_CSTATE_C1) | CPU_STATE_BIT(CPU_CSTATE_C2));
+#else
+    cpu_pwr_c_state_capability_set(cpuIndex, CPU_STATE_BIT(CPU_CSTATE_C0)
+                                   | CPU_STATE_BIT(CPU_CSTATE_C1));
+#endif
     if (retVal == PWR_ERR) {
         return PWR_ERR;
     }
@@ -197,11 +201,13 @@ pwr_status_t board_cpu_pwr_init(void)
     Tell the CPU PWR MGMT module which C state is supported with
     tickless function through tickless_c_states_add(c_state_x).
     */
+#if defined(HAVE_RTC)
     tickless_c_states_add(CPU_STATE_BIT(CPU_CSTATE_C0)
                           | CPU_STATE_BIT(CPU_CSTATE_C1) | CPU_STATE_BIT(CPU_CSTATE_C2                          ));
-
-//    tickless_c_states_add(CPU_STATE_BIT(CPU_CSTATE_C0)
-//                          | CPU_STATE_BIT(CPU_CSTATE_C1) );
+#else
+    tickless_c_states_add(CPU_STATE_BIT(CPU_CSTATE_C0)
+                          | CPU_STATE_BIT(CPU_CSTATE_C1) );
+#endif
 #if RHINO_CONFIG_CPU_PWR_SHOW
     cpu_pwr_info_show();
     cpu_pwr_state_show();

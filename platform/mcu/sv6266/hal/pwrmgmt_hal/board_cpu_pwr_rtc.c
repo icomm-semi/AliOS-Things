@@ -62,22 +62,34 @@ extern uint32_t g_sleep_us;
 
 #define M_RTC_MIN_SLEEP_US_TIME         (1594+50)
 
+static void rtc_failed_compensation_systick() {
+    if (systick_remain_us > 10) {
+        systick_remain_us -= 10;
+    } else {
+        systick_remain_us = 1;
+    }
+}
+
 static pwr_status_t rtc_one_shot_start(uint64_t planUs)
 {
     planUs = planUs - systick_passed_us;
     if (planUs < M_RTC_MIN_SLEEP_US_TIME) {
+        rtc_failed_compensation_systick();
         //printf("[%s]failed !!%lld\n", __func__, planUs);
         return PWR_ERR;
     }
     if (g_power_user_force_active) {
+        rtc_failed_compensation_systick();
         //printf("[%s] user_force_active\n", __func__);
         return PWR_ERR;
     }
     if (g_power_rtc_force_active) {
+        rtc_failed_compensation_systick();
         //printf("[%s] rtc_force_active\n", __func__);
         return PWR_ERR;
     }
     if (g_power_xtal_force_active) {
+        rtc_failed_compensation_systick();
         //printf("x");
         //printf("[%s] xtal_force_active\n", __func__);
         return PWR_ERR;

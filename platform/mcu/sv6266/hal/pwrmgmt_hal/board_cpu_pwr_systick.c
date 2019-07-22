@@ -37,7 +37,7 @@ void systick_resume(void)
     hal_tm_init(TM_TU0_US);
     systick_stop();
    // printf("suspend resume %d\r\n", systick_remain_us);
-    systick_set_period(systick_remain_us * SYSTICK_FREQ / 1000000);
+    systick_set_period(systick_remain_us * (SYSTICK_FREQ / 1000000));
     systick_start();
     systick_set_period(SYSTICK_FREQ / RHINO_CONFIG_TICKS_PER_SECOND);
     intc_irq_enable(IRQ_SYSTICK);

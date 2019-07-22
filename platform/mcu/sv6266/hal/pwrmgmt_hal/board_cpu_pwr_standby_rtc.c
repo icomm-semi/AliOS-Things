@@ -44,7 +44,6 @@ static void tmr_irq_handler (uint32_t irq_num)
 {
 //    printf ("%s:%d: In function: '%s': tmr%ld interrupt occurred\n", __FILENAME__, __LINE__ - 1, __func__, irq_num - IRQ_UTIMER_0);
     drv_tmr_clear_interrupt_status (irq_num - IRQ_UTIMER_0);
-    printf ("\n");
 }
 
 static pwr_status_t rtc_init(void)
@@ -57,12 +56,15 @@ static pwr_status_t rtc_init(void)
 
 static pwr_status_t rtc_one_shot_start(uint64_t planUs)
 {
+    if (planUs <= systick_passed_us) {
+        return PWR_ERR;
+    }
     planUs = planUs - systick_passed_us;
     if (drv_tmr_get_interrupt_status(RTC_HW_TIMER_ID)) {
         drv_tmr_clear_interrupt_status(RTC_HW_TIMER_ID);
     }
 
-    start_count = planUs * RTC_HW_TIMER_FREQ / (uint64_t)1000000;
+    start_count = planUs * (RTC_HW_TIMER_FREQ / (uint64_t)1000000);
 
     drv_tmr_enable(RTC_HW_TIMER_ID, TM_MODE_AUTO_RELOAD, start_count);
     return PWR_OK;
@@ -84,13 +86,13 @@ static pwr_status_t rtc_one_shot_stop(uint64_t *pPassedUs)
         count = 0;
     }
 
-    passed_timer      = count * (uint64_t)1000000 / RTC_HW_TIMER_FREQ + systick_passed_us + 5;
+    passed_timer      = count * ((uint64_t)1000000 / RTC_HW_TIMER_FREQ) + systick_passed_us;
     *pPassedUs        = passed_timer / MSEC_PER_SYSTICK * MSEC_PER_SYSTICK;
     systick_remain_us = SYSTICK_FREQ / RHINO_CONFIG_TICKS_PER_SECOND - passed_timer % MSEC_PER_SYSTICK;
 
     drv_tmr_disable(RTC_HW_TIMER_ID);
 
-//    printf("[%s]!sleep_ed %lld, remian %d\n", __func__, *pPassedUs, systick_remain_us);
+    //printf("[%s]!sleep_ed %lld, remian %d\n", __func__, *pPassedUs, systick_remain_us);
     return PWR_OK;
 }
 
