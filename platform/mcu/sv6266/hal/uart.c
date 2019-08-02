@@ -129,8 +129,12 @@ int32_t hal_uart_recv_II(uart_dev_t *uart, void *data, uint32_t expect_size,
         }
         if (expect_size > 0)
         {
-            OS_MsDelay(10);
-            timeout--;
+            if (timeout > 200) {
+                OS_MsDelay(200);
+                timeout-=200;
+            } else {
+                OS_MsDelay(timeout);
+            }
         }
     }
 
