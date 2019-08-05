@@ -14,7 +14,7 @@ HOST_OPENOCD := ICEman
 
 $(NAME)_TYPE := kernel
 
-$(NAME)_COMPONENTS += rhino hal netmgr framework.common cli cjson digest_algorithm alicrypto
+$(NAME)_COMPONENTS += rhino hal netmgr framework.common cjson digest_algorithm alicrypto
 $(NAME)_COMPONENTS += protocols.net
 $(NAME)_COMPONENTS += libc
 
@@ -64,6 +64,7 @@ GLOBAL_INCLUDES += $(SDKDIR)/components/osal
 GLOBAL_INCLUDES += $(SDKDIR)/components/inc
 GLOBAL_INCLUDES += $(SDKDIR)/components
 GLOBAL_INCLUDES += $(SDKDIR)/components/tools/atcmd
+GLOBAL_INCLUDES += $(SDKDIR)/components/drv/tmr
 GLOBAL_INCLUDES += $(SDKDIR)/components/inc/crypto \
                    $(SDKDIR)/components/softmac \
                    $(SDKDIR)/components/iotapi \
@@ -91,12 +92,15 @@ GLOBAL_DEFINES += NO_ROM
 endif
 
 GLOBAL_DEFINES += ASICv2
+GLOBAL_ASMFLAGS += -DASICv2
 GLOBAL_DEFINES += CONFIG_CACHE_SUPPORT
 GLOBAL_DEFINES += CONFIG_ENABLE_WDT
 
-SUPPORT_LOW_POWER := 0
+SUPPORT_LOW_POWER := 1
 ifeq ($(strip $(SUPPORT_LOW_POWER)), 1)
 GLOBAL_DEFINES += FEATURE_RETENTION_BOOT
+#GLOBAL_DEFINES += PWRMGMT_CONFIG_DEBUG
+GLOBAL_DEFINES += SUPPORT_LOW_POWER=1
 endif
 
 GLOBAL_DEFINES += SUPPORT_PARTITION_MP_TABLE
@@ -149,7 +153,7 @@ GLOBAL_DEFINES += SETTING_PSRAM_HEAP_SIZE=$(SETTING_PSRAM_HEAP_SIZE)
 ################################################################
 # kv
 ################################################################
-#GLOBAL_DEFINES += CONFIG_AOS_KV_PTN=5
+GLOBAL_DEFINES += CONFIG_AOS_KV_PTN=5
 GLOBAL_DEFINES += CONFIG_AOS_KV_BUFFER_SIZE=8192
 
 ################################################################
@@ -181,17 +185,22 @@ GLOBAL_LDFLAGS += platform/mcu/sv6266/do_printf.o
 
 $(NAME)_INCLUDES := $(SDKDIR)/components/drv
 $(NAME)_SOURCES :=	aos.c \
-					libc_patch.c \
-					port/soc_impl.c \
-					port/port_tick.c \
-					hal/uart.c \
-					hal/flash_port.c \
-                    hal/wifi_port.c \
-                    hal/rf_cmd.c \
-                    hal/pwm.c \
-                    hal/adc.c \
-		    hal/gpio.c \
-		    hal/i2c.c  \
-		    hal/spi.c  \
-                    $(SDKDIR)/components/net/tcpip/lwip-1.4.0/src/netif/ethernetif.c \
-					hal/hw.c
+	libc_patch.c \
+	port/soc_impl.c \
+	port/port_tick.c \
+	port/portISR.c \
+	hal/uart.c \
+	hal/flash_port.c \
+	hal/wifi_port.c \
+	hal/rf_cmd.c \
+	hal/pwm.c \
+	hal/adc.c \
+	hal/gpio.c \
+	hal/i2c.c  \
+	hal/spi.c  \
+	$(SDKDIR)/components/net/tcpip/lwip-1.4.0/src/netif/ethernetif.c \
+	hal/hw.c \
+	hal/pwrmgmt_hal/board_cpu_pwr_rtc.c \
+	hal/pwrmgmt_hal/board_cpu_pwr_standby_rtc.c \
+	hal/pwrmgmt_hal/board_cpu_pwr_systick.c \
+	hal/pwrmgmt_hal/board_cpu_pwr.c
