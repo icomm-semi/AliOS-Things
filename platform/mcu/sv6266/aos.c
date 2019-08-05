@@ -27,6 +27,7 @@
 #include "wdt/drv_wdt.h"
 #include "gpio/drv_gpio.h"
 #include "drv_uart.h"
+#include "hal/soc/soc.h"
 
 #if defined (VCALL_RHINO)
 #if defined (CONFIG_AOS_CLI)
@@ -120,6 +121,7 @@ void isr_gpio_11()
 }
 
 extern struct st_rf_table ssv_rf_table;
+extern uart_dev_t uart_0;
 
 static void app_start(void)
 {
@@ -134,10 +136,11 @@ static void app_start(void)
     drv_uart_init();
     drv_uart_set_fifo(UART_INT_RXFIFO_TRGLVL_1, 0x0);
     drv_uart_set_format(921600, UART_WORD_LEN_8, UART_STOP_BIT_1, UART_PARITY_DISABLE);
-    drv_uart_register_isr(UART_DATA_RDY_IE, uart_rx_isr);
+    //drv_uart_register_isr(UART_DATA_RDY_IE, uart_rx_isr);
     
     OS_Init();
     OS_MemInit();
+    hal_uart_init (&uart_0);
     //OS_PsramInit();
 
     load_rf_table_from_flash();
