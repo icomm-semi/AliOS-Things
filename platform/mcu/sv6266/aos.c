@@ -170,7 +170,7 @@ static void app_start(void)
     
     OS_TaskCreate(ssvradio_init_task, "ssvradio_init", 512, NULL, 1, NULL);
 #if defined(CONFIG_ENABLE_WDT)
-//    OS_TaskCreate(wdt_task, "wdt", 256+128, NULL, 15, NULL);
+    OS_TaskCreate(wdt_task, "wdt", 256+128, NULL, 15, NULL);
 #endif
     krhino_task_dyn_create(&g_aos_init, "aos-init", 0, AOS_DEFAULT_APP_PRI, 0, AOS_START_STACK, (task_entry_t)system_init, 1);
     
