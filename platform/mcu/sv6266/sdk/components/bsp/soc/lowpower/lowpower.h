@@ -22,7 +22,6 @@ extern enum lowpower_option g_lowpower_option;
 void lowpower_mode(enum lowpower_option);
 enum lowpower_option get_lowpower_mode();
 int sys_lowpower_present() ATTRIBUTE_SECTION_FBOOT;
-void system_delay(uint32_t delaytick) ATTRIBUTE_SECTION_FBOOT;
 void sys_wifi_power_off() ATTRIBUTE_SECTION_FBOOT;
 void sys_wifi_power_on() ATTRIBUTE_SECTION_FBOOT;
 int sys_sleep(uint32_t) ATTRIBUTE_SECTION_FBOOT;
